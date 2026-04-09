@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mic, Square, Loader2, Trash } from 'lucide-react';
+import { X, Mic, Square, Loader2, Trash, FileText } from 'lucide-react';
 import type { Meeting, Project } from '../types';
 import { useSpeech } from '../hooks/useSpeech';
 import { useAI } from '../hooks/useAI';
@@ -16,7 +16,8 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
   const [who, setWho]     = useState(prefillData?.person || '');
   const [type, setType]   = useState<Meeting['type']>('1:1');
   const [projId, setProjId] = useState('');
-  const [notes, setNotes] = useState(prefillData?.title ? `Event: ${prefillData.title}\n` : '');
+  const TEMPLATE = `## What was discussed\n- \n\n## Key decisions\n- \n\n## Action items\n- \n\n## Follow-ups / Commitments\n- `;
+  const [notes, setNotes] = useState(prefillData?.title ? `## What was discussed\n- ${prefillData.title}\n\n## Key decisions\n- \n\n## Action items\n- \n\n## Follow-ups / Commitments\n- ` : '');
 
   const { isRecording, transcript, setTranscript, interim, seconds, isSupported, toggleRec, reset } = useSpeech();
   const { summarize, isProcessing } = useAI();
@@ -179,10 +180,37 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
               or type
             </div>
 
+            {/* Template button */}
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] text-ink3 font-mono tracking-wider uppercase">Notes</span>
+              {!notes && (
+                <button
+                  type="button"
+                  onClick={() => setNotes(TEMPLATE)}
+                  disabled={isProcessing}
+                  className="flex items-center gap-1.5 text-[11px] font-medium font-mono text-ink3 hover:text-lime border border-line2 hover:border-lime/30 px-2.5 py-1 rounded-[7px] transition-all duration-150"
+                >
+                  <FileText className="w-[11px] h-[11px]" />
+                  Use template
+                </button>
+              )}
+              {notes && (
+                <button
+                  type="button"
+                  onClick={() => setNotes('')}
+                  disabled={isProcessing}
+                  className="flex items-center gap-1.5 text-[11px] font-medium font-mono text-ink4 hover:text-red-ink border border-transparent hover:border-red/20 px-2.5 py-1 rounded-[7px] transition-all duration-150"
+                >
+                  <Trash className="w-[11px] h-[11px]" />
+                  Clear
+                </button>
+              )}
+            </div>
+
             <textarea
-              className="finput resize-y min-h-[96px] leading-[1.65]"
-              placeholder="Describe what was discussed, decisions, action items, follow-ups…"
-              rows={4}
+              className="finput resize-y min-h-[200px] leading-[1.75] font-mono text-[12.5px]"
+              placeholder="Click \"Use template\" above to get started, or write freely here…"
+              rows={8}
               value={notes}
               onChange={e => setNotes(e.target.value)}
               disabled={isProcessing}
