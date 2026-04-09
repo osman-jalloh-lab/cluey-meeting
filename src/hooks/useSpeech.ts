@@ -90,6 +90,7 @@ export function useSpeech() {
   return {
     isRecording,
     transcript,
+    setTranscript,
     interim,
     seconds,
     isSupported,

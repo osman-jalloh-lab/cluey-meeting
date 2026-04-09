@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mic, Square, Loader2 } from 'lucide-react';
+import { X, Mic, Square, Loader2, Trash } from 'lucide-react';
 import type { Meeting, Project } from '../types';
 import { useSpeech } from '../hooks/useSpeech';
 import { useAI } from '../hooks/useAI';
@@ -18,7 +18,7 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
   const [projId, setProjId] = useState('');
   const [notes, setNotes] = useState(prefillData?.title ? `Event: ${prefillData.title}\n` : '');
 
-  const { isRecording, transcript, interim, seconds, isSupported, toggleRec, reset } = useSpeech();
+  const { isRecording, transcript, setTranscript, interim, seconds, isSupported, toggleRec, reset } = useSpeech();
   const { summarize, isProcessing } = useAI();
 
   const handleSave = async () => {
@@ -118,7 +118,7 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
             <label className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-ink3 mb-[7px] font-mono">Record or type your recap</label>
 
             <div className={`bg-paper2 border-[1.5px] border-dashed rounded-[14px] p-[18px] flex flex-col gap-3.5 transition-colors duration-200
-              ${isRecording ? 'border-red/50 bg-red-bg/50' : 'border-line2'}`}>
+              ${isRecording ? 'border-ink3/40 bg-paper4' : 'border-line2'}`}>
 
               {!isSupported && (
                 <div className="bg-amber-bg border border-amber/20 text-amber-ink rounded-[8px] p-2.5 px-3 text-[12px] leading-[1.6]">
@@ -130,7 +130,7 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
                 <button
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-full border-[1.5px] font-sans text-[13px] font-medium cursor-pointer transition-all duration-150 tracking-[-0.1px]
                     ${isRecording
-                      ? 'bg-red text-white border-red hover:bg-[#d04030]'
+                      ? 'bg-paper text-ink border-ink3/50 hover:bg-paper3'
                       : 'bg-paper3 border-line2 text-ink hover:border-ink3 hover:bg-paper4'
                     }`}
                   onClick={toggleRec}
@@ -149,21 +149,27 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
                   )}
                 </button>
                 {isRecording && (
-                  <span className="text-[12px] text-red font-mono tabular-nums">{formatTime(seconds)}</span>
+                  <span className="text-[12px] text-ink4 font-mono tabular-nums">{formatTime(seconds)}</span>
+                )}
+                {!isRecording && transcript && (
+                  <button 
+                    onClick={reset}
+                    disabled={isProcessing}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-line2 hover:border-red/40 hover:bg-red-bg/50 text-red-ink/90 hover:text-red transition-colors font-sans text-[12px] font-medium ml-auto"
+                  >
+                    <Trash className="w-[14px] h-[14px] opacity-70" /> Discard
+                  </button>
                 )}
               </div>
 
-              <div className={`min-h-[64px] bg-paper3 border border-line rounded-[10px] p-3 px-3.5 text-[13px] leading-[1.65] transition-colors
-                ${(transcript || interim) ? 'text-ink' : 'text-ink3 italic'}`}>
-                {transcript || interim ? (
-                  <>
-                    {transcript}
-                    {interim && <span className="text-ink3 italic"> {interim}</span>}
-                  </>
-                ) : (
-                  'Tap record and speak — your words appear here in real time.'
-                )}
-              </div>
+              <textarea 
+                className={`w-full min-h-[64px] bg-paper3 border border-line rounded-[10px] p-3 px-3.5 text-[13px] leading-[1.65] transition-colors resize-y outline-none focus:border-ink3/50
+                  ${(transcript || interim) ? 'text-ink' : 'text-ink3 italic'}`}
+                value={isRecording && interim ? transcript + ' ' + interim : transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                disabled={isRecording || isProcessing}
+                placeholder="Tap record and speak — your words appear here in real time. Pause to edit them."
+              />
             </div>
 
             {/* Divider */}
