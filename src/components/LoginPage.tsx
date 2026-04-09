@@ -1,9 +1,9 @@
 import React from 'react';
-import { Hexagon, LogIn, Lock } from 'lucide-react';
+import { Hexagon, LogIn, Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, loginAsGuest } = useAuth();
 
   return (
     <div className="flex h-screen items-center justify-center bg-paper text-ink font-sans relative overflow-hidden">
@@ -21,17 +21,27 @@ export const LoginPage: React.FC = () => {
           Clue<em className="font-light italic text-ink2">y</em>
         </h1>
         
-        <p className="text-[14px] text-ink2 leading-relaxed mb-10 max-w-[280px]">
+        <p className="text-[14px] text-ink2 leading-relaxed mb-8 max-w-[280px]">
           Your private, AI-powered meeting memory. Log in to keep your recaps and calendar synced seamlessly.
         </p>
 
-        <button 
-          onClick={() => login()}
-          className="flex items-center gap-3 bg-paper3 border border-line2 hover:border-lime/40 text-ink px-6 py-3.5 rounded-[12px] font-medium text-[14px] transition-all duration-300 hover:shadow-lime-glow group w-full justify-center active:scale-[0.98]"
-        >
-          <LogIn className="w-4 h-4 text-ink3 group-hover:text-lime transition-colors" />
-          Continue with Google
-        </button>
+        <div className="flex flex-col gap-3 w-full">
+          <button 
+            onClick={() => login()}
+            className="flex items-center justify-center gap-3 bg-paper3 border border-line2 hover:border-lime/40 text-ink px-6 py-3.5 rounded-[12px] font-medium text-[14px] transition-all duration-300 hover:shadow-lime-glow group w-full active:scale-[0.98]"
+          >
+            <LogIn className="w-4 h-4 text-ink3 group-hover:text-lime transition-colors" />
+            Continue with Google
+          </button>
+
+          <button 
+            onClick={() => loginAsGuest()}
+            className="flex items-center justify-center gap-3 bg-paper border border-line hover:border-line2 text-ink2 px-6 py-3.5 rounded-[12px] font-medium text-[14px] transition-all duration-300 group w-full active:scale-[0.98]"
+          >
+            <User className="w-4 h-4 text-ink4 group-hover:text-ink2 transition-colors" />
+            Continue as Guest
+          </button>
+        </div>
 
         <div className="flex items-center gap-2 mt-8 text-[11px] text-ink4 font-mono">
           <Lock className="w-3 h-3" />

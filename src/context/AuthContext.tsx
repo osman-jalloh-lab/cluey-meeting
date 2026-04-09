@@ -13,6 +13,7 @@ interface AuthContextType {
   accessToken: string | null;
   isLoading: boolean;
   login: () => void;
+  loginAsGuest: () => void;
   logout: () => void;
 }
 
@@ -23,42 +24,52 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [accessToken, setAccessToken] = useState<string | null>(() => localStorage.getItem('gcal_token'));
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async (token: string) => {
-    try {
-      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser({
-          sub: data.sub,
-          name: data.name,
-          email: data.email,
-          picture: data.picture,
-        });
-      } else {
-        throw new Error('Failed to fetch user profile');
-      }
-    } catch (err) {
-      console.error(err);
-      setAccessToken(null);
-      localStorage.removeItem('gcal_token');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchProfile = async (token: string) => {
+      try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser({
+            sub: data.sub,
+            name: data.name,
+            email: data.email,
+            picture: data.picture,
+          });
+        } else {
+          throw new Error('Failed to fetch user profile');
+        }
+      } catch (err) {
+        console.error(err);
+        setAccessToken(null);
+        localStorage.removeItem('gcal_token');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const isGuest = localStorage.getItem('cluey_guest_mode') === 'true';
     if (accessToken) {
       fetchProfile(accessToken);
+    } else if (isGuest) {
+      setUser({
+        sub: 'guest-user-1',
+        name: 'Guest',
+        email: 'guest@cluey.app',
+        picture: `https://ui-avatars.com/api/?name=Guest&background=A3E635&color=000`
+      });
+      setIsLoading(false);
     } else {
       setIsLoading(false);
     }
   }, [accessToken]);
 
   const login = useGoogleLogin({
-    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    scope: 'openid email profile https://www.googleapis.com/auth/calendar.readonly',
     onSuccess: (tokenResponse) => {
+      localStorage.removeItem('cluey_guest_mode');
       setAccessToken(tokenResponse.access_token);
       localStorage.setItem('gcal_token', tokenResponse.access_token);
     },
@@ -67,14 +78,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
+  const loginAsGuest = () => {
+    localStorage.setItem('cluey_guest_mode', 'true');
+    setUser({
+      sub: 'guest-user-1',
+      name: 'Guest',
+      email: 'guest@cluey.app',
+      picture: `https://ui-avatars.com/api/?name=Guest&background=A3E635&color=000`
+    });
+  };
+
   const logout = () => {
     setAccessToken(null);
     setUser(null);
     localStorage.removeItem('gcal_token');
+    localStorage.removeItem('cluey_guest_mode');
   };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, accessToken, isLoading, login, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );
