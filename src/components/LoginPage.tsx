@@ -37,7 +37,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontStyle: 'italic', fontSize: 40, letterSpacing: '-1px', lineHeight: 1.05, margin: '0 0 12px', color: 'var(--ink)' }}>
-          cluey
+          parawi
         </h1>
 
         <p style={{ fontSize: 14, color: 'var(--ink-3)', lineHeight: 1.65, margin: '0 0 32px', maxWidth: 280 }}>

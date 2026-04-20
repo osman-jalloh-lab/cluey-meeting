@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <LogoIcon />
         </div>
         <span style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontStyle: 'italic', fontSize: 22, letterSpacing: '-0.5px', color: 'var(--ink)' }}>
-          cluey
+          parawi
         </span>
         <span style={{ flex: 1 }} />
         <button
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--line)'; el.style.color = 'var(--ink-3)'; }}
         >
           <Sparkles size={14} strokeWidth={1.6} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-          <span style={{ flex: 1, textAlign: 'left' }}>Ask cluey…</span>
+          <span style={{ flex: 1, textAlign: 'left' }}>Ask parawi…</span>
           <span className="kbd">⌘K</span>
         </button>
       </div>

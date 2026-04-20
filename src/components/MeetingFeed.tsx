@@ -93,7 +93,7 @@ export const MeetingFeed: React.FC<MeetingFeedProps> = ({ meetings, allMeetings,
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginTop: 26 }}>
           <StatCard label="Meetings this week" value={thisWeek} sub={`${allMeetings.length} total`} />
           <StatCard label="Open items" value={openTotal} sub={openTotal === 0 ? 'All clear!' : `${openCommits} commits · ${openTasks} tasks`} tone={openTotal > 0 ? 'neutral' : 'neutral'} />
-          <StatCard label="Ask cluey" value="⌘K" sub="Try 'what did we decide?'" tone="accent" onClick={onAsk} />
+          <StatCard label="Ask parawi" value="⌘K" sub="Try 'what did we decide?'" tone="accent" onClick={onAsk} />
         </div>
       </div>
 
