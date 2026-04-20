@@ -6,10 +6,11 @@ export function useSpeech() {
   const [interim, setInterim] = useState('');
   const [seconds, setSeconds] = useState(0);
   const [isSupported, setIsSupported] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const recogRef = useRef<any>(null);
   const timerRef = useRef<number | null>(null);
-  const isRecordingRef = useRef(false); // stable ref for onend closure
+  const isRecordingRef = useRef(false);
 
   useEffect(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -23,6 +24,7 @@ export function useSpeech() {
     recog.lang = 'en-US';
 
     recog.onresult = (e: any) => {
+      setError(null);
       let currentInterim = '';
       let currentFinal = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -37,10 +39,22 @@ export function useSpeech() {
       setInterim(currentInterim);
     };
 
-    recog.onerror = () => stopRec();
+    recog.onerror = (e: any) => {
+      const msg: Record<string, string> = {
+        'not-allowed':    'Microphone access was denied. Allow mic access in your browser and try again.',
+        'no-speech':      'No speech detected. Try speaking closer to your mic.',
+        'audio-capture':  'No microphone found. Plug one in and try again.',
+        'network':        'Network error — check your connection and try again.',
+        'aborted':        '',
+      };
+      const text = msg[e.error] ?? `Recording error: ${e.error}`;
+      if (text) setError(text);
+      stopRec();
+    };
+
     recog.onend = () => {
       if (isRecordingRef.current) {
-        try { recog.start(); } catch {} // auto-restart continuous
+        try { recog.start(); } catch {}
       }
     };
 
@@ -48,10 +62,11 @@ export function useSpeech() {
     return () => {
       try { recog.stop(); } catch {}
     };
-  }, []); // only run once — onend reads isRecordingRef, not stale closure
+  }, []);
 
   const startRec = () => {
     if (!recogRef.current || isRecordingRef.current) return;
+    setError(null);
     setTranscript('');
     setInterim('');
     setSeconds(0);
@@ -64,12 +79,16 @@ export function useSpeech() {
 
     try {
       recogRef.current.start();
-    } catch {}
+    } catch (e) {
+      setError('Could not start recording. Please try again.');
+      stopRec();
+    }
   };
 
   const stopRec = () => {
     isRecordingRef.current = false;
     setIsRecording(false);
+    setInterim('');
     if (timerRef.current !== null) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -85,6 +104,7 @@ export function useSpeech() {
     setTranscript('');
     setInterim('');
     setSeconds(0);
+    setError(null);
   };
 
   return {
@@ -94,9 +114,10 @@ export function useSpeech() {
     interim,
     seconds,
     isSupported,
+    error,
     startRec,
     stopRec,
     toggleRec,
-    reset
+    reset,
   };
 }

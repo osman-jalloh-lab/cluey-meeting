@@ -2,6 +2,35 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  directory = "netlify/functions"
+
+# Security headers applied to all responses
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Prevent clickjacking (A05)
+    X-Frame-Options = "DENY"
+    # Stop MIME-type sniffing (A05)
+    X-Content-Type-Options = "nosniff"
+    # Restrict referrer info leakage (A02)
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # Enforce HTTPS for 1 year (A02)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    # Content Security Policy — tighten as needed (A03, A05)
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://ui-avatars.com https://lh3.googleusercontent.com; connect-src 'self' https://www.googleapis.com https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+    # Disable browser features not needed by the app (A05)
+    Permissions-Policy = "camera=(), microphone=*, geolocation=(), payment=()"
+    # XSS protection for legacy browsers (A03)
+    X-XSS-Protection = "1; mode=block"
+
+# Proxy /api/summarize → serverless function (must be before the SPA catch-all)
+[[redirects]]
+  from = "/api/summarize"
+  to = "/.netlify/functions/summarize"
+  status = 200
+
+# SPA catch-all — serve index.html for all other routes
 [[redirects]]
   from = "/*"
   to = "/index.html"
