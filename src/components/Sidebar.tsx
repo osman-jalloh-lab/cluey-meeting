@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside style={{
-      width: 252, flexShrink: 0, display: 'flex', flexDirection: 'column',
+      width: 272, flexShrink: 0, display: 'flex', flexDirection: 'column',
       borderRight: '1px solid var(--line)', background: 'var(--paper-2)',
       height: '100vh', position: 'sticky', top: 0,
     }}>
