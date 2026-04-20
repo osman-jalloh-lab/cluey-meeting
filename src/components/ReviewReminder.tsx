@@ -1,6 +1,7 @@
 import React from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, CalendarPlus } from 'lucide-react';
 import type { Project } from '../types';
+import { buildGCalUrl } from '../utils/gcal';
 
 interface ReviewReminderProps {
   projects: Project[];
@@ -15,6 +16,13 @@ export const ReviewReminder: React.FC<ReviewReminderProps> = ({ projects, onDism
     const daysSince = (Date.now() - last.getTime()) / 86400000;
     return daysSince >= p.reviewIntervalDays;
   });
+
+  const recurFor = (days?: number): 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | undefined => {
+    if (days === 7) return 'WEEKLY';
+    if (days === 14) return 'BIWEEKLY';
+    if (days === 30) return 'MONTHLY';
+    return undefined;
+  };
 
   if (due.length === 0) return null;
 
@@ -39,12 +47,27 @@ export const ReviewReminder: React.FC<ReviewReminderProps> = ({ projects, onDism
           Review due every {p.reviewIntervalDays} days
         </div>
       </div>
-      <button
-        onClick={() => { onUpdateProject(p.id, { lastReviewedAt: new Date().toISOString() }); onDismiss(p.id); }}
-        style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', font: '500 11px/1 var(--font-ui)', cursor: 'pointer', flexShrink: 0 }}
-      >
-        Mark reviewed
-      </button>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+        <a
+          href={buildGCalUrl({
+            title: `Review: ${p.name}`,
+            details: `Recurring review for project "${p.name}"`,
+            recur: recurFor(p.reviewIntervalDays),
+          })}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Add recurring review to Google Calendar"
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--paper-2)', color: 'var(--ink-2)', font: '500 11px/1 var(--font-ui)', textDecoration: 'none' }}
+        >
+          <CalendarPlus size={11} /> Schedule
+        </a>
+        <button
+          onClick={() => { onUpdateProject(p.id, { lastReviewedAt: new Date().toISOString() }); onDismiss(p.id); }}
+          style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', font: '500 11px/1 var(--font-ui)', cursor: 'pointer' }}
+        >
+          Mark reviewed
+        </button>
+      </div>
       <button
         onClick={() => onDismiss(p.id)}
         style={{ width: 24, height: 24, borderRadius: 4, border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--ink-4)', display: 'grid', placeItems: 'center', flexShrink: 0 }}

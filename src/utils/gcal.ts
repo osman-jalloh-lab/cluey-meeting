@@ -9,8 +9,10 @@ export function buildGCalUrl(opts: {
   startIso?: string;
   /** Duration in minutes; defaults to 30 */
   durationMins?: number;
+  /** Optional recurrence rule — adds RRULE to the event */
+  recur?: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
 }): string {
-  const { title, details = '', durationMins = 30 } = opts;
+  const { title, details = '', durationMins = 30, recur } = opts;
 
   // Default start: tomorrow at 9:00 AM local time
   const start = opts.startIso ? new Date(opts.startIso) : (() => {
@@ -34,12 +36,22 @@ export function buildGCalUrl(opts: {
       '00',
     ].join('');
 
+  const rruleMap: Record<string, string> = {
+    WEEKLY:   'RRULE:FREQ=WEEKLY',
+    BIWEEKLY: 'RRULE:FREQ=WEEKLY;INTERVAL=2',
+    MONTHLY:  'RRULE:FREQ=MONTHLY',
+  };
+
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: title,
     details,
     dates: `${fmt(start)}/${fmt(end)}`,
   });
+
+  if (recur && rruleMap[recur]) {
+    params.set('recur', rruleMap[recur]);
+  }
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }

@@ -294,7 +294,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({ meetingId, meetings, p
           {/* Footer actions */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)' }}>
-              via {meeting!.isVoice ? 'voice' : 'text'} · transcribed by parawi
+              saved with parawi
             </span>
             <button
               onClick={() => { if (window.confirm('Delete this recap?')) onDelete(meeting!.id); }}

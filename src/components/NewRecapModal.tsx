@@ -82,8 +82,29 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
     onClose();
   };
 
+  const buildBasicSave = (): PendingSave => {
+    const finalRaw = buildRawNotes();
+    return {
+      who: who.trim(),
+      finalRaw,
+      type,
+      projId,
+      result: { summary: finalRaw, decisions: [], actions: [], commitments: [], tags: [], aiSucceeded: false },
+      isVoice: false,
+    };
+  };
+
+  const handleSaveDirect = () => {
+    if (!who.trim()) return alert('Add a course / topic first');
+    const finalRaw = buildRawNotes();
+    if (!discussions.trim() && !actionItems.trim() && !followups.trim()) {
+      return alert('Add notes in at least one section');
+    }
+    doSave({ ...buildBasicSave(), result: { summary: finalRaw, decisions: [], actions: [], commitments: [], tags: [], aiSucceeded: false } }, []);
+  };
+
   const handleSummarize = async () => {
-    if (!who.trim()) return alert('Who was the meeting with?');
+    if (!who.trim()) return alert('Add a course / topic first');
     const finalRaw = buildRawNotes();
     if (!finalRaw.trim() || (!discussions.trim() && !actionItems.trim() && !followups.trim())) {
       return alert('Add notes in at least one section');
@@ -183,8 +204,9 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
             </div>
             <button
               className="w-7 h-7 rounded-[7px] text-ink3 hover:bg-paper4 hover:text-red flex items-center justify-center transition-colors"
-              onClick={onClose}
+              onClick={() => { if (pendingSave) doSave(pendingSave, taskDrafts.filter(d => d.text.trim()).map(d => ({ id: d.id, text: d.text.trim(), done: false, assignee: d.assignee.trim() || undefined, dueDate: d.dueDate || undefined }))); else onClose(); }}
               disabled={isSaving}
+              title="Save and close"
             >
               <X className="w-[17px] h-[17px]" strokeWidth={2} />
             </button>
@@ -336,8 +358,8 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
         <div className="p-[22px] px-6 flex flex-col gap-[18px]">
           <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-ink3 mb-[7px] font-mono">Who was this with?</label>
-              <input className="finput" placeholder="Anna, Marcus…" value={who} onChange={e => setWho(e.target.value)} disabled={isProcessing} />
+              <label className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-ink3 mb-[7px] font-mono">Course / Topic</label>
+              <input className="finput" placeholder="e.g. Biology 101, Project kickoff…" value={who} onChange={e => setWho(e.target.value)} disabled={isProcessing} />
             </div>
             <div>
               <label className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-ink3 mb-[7px] font-mono">Meeting type</label>
@@ -432,11 +454,21 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
         </div>
 
         {/* Footer */}
-        <div className="p-4 px-6 border-t border-line flex justify-end gap-2.5 sticky bottom-0 bg-paper3">
+        <div className="p-4 px-6 border-t border-line flex justify-between gap-2.5 sticky bottom-0 bg-paper3">
           <button className="btn btn-outline" onClick={onClose} disabled={isProcessing}>Cancel</button>
-          <button className="btn btn-dark" onClick={handleSummarize} disabled={isProcessing || !!aiError}>
-            {isProcessing ? <><Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1.5" />Summarizing…</> : 'Review tasks →'}
-          </button>
+          <div className="flex gap-2.5">
+            <button
+              className="btn btn-outline text-[12px]"
+              onClick={handleSaveDirect}
+              disabled={isProcessing}
+              title="Save notes as-is without AI summarization"
+            >
+              Save notes
+            </button>
+            <button className="btn btn-dark" onClick={handleSummarize} disabled={isProcessing || !!aiError}>
+              {isProcessing ? <><Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1.5" />Summarizing…</> : 'AI Review →'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
