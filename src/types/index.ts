@@ -1,3 +1,16 @@
+export interface Task {
+  id: string;
+  text: string;
+  done: boolean;
+  assignee?: string;
+  assigneeEmail?: string;
+  assignedByEmail?: string;
+  dueDate?: string;
+  completedAt?: string;
+  notificationSent?: boolean;
+  completionSent?: boolean;
+}
+
 export interface Commitment {
   text: string;
   done: boolean;
@@ -9,7 +22,7 @@ export interface CalendarEvent {
   attendees: string[];
   startTime: string;
   endTime: string;
-  status: string; // e.g. "upcoming" or "past"
+  status: string;
 }
 
 export interface Meeting {
@@ -22,15 +35,19 @@ export interface Meeting {
   decisions: string[];
   actions: string[];
   commitments: Commitment[];
+  tasks?: Task[];
   tags: string[];
   isVoice: boolean;
-  createdAt: string; // ISO format
+  createdAt: string;
 }
 
 export interface Project {
   id: string;
   name: string;
   color: string;
+  description?: string;
+  reviewIntervalDays?: number;   // 0 = no review
+  lastReviewedAt?: string;       // ISO date string
 }
 
 export type ViewType = 'all' | 'people' | 'commitments' | 'project';

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { X, Mic, Square, Loader2, Trash, FileText, AlertTriangle, RefreshCw, Plus, UserRound, Mail, CalendarDays, ArrowLeft } from 'lucide-react';
+import { X, Loader2, AlertTriangle, RefreshCw, Plus, UserRound, Mail, CalendarDays, ArrowLeft } from 'lucide-react';
 import type { Meeting, Project, Task } from '../types';
-import { useSpeech } from '../hooks/useSpeech';
 import { useAI, type AIResult } from '../hooks/useAI';
 import { useAuth } from '../context/AuthContext';
 import { sendTaskCreatedEmail } from '../utils/emailjs';
@@ -39,8 +38,9 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
   const [who, setWho] = useState(prefillData?.person || '');
   const [type, setType] = useState<Meeting['type']>('1:1');
   const [projId, setProjId] = useState('');
-  const TEMPLATE = `WHAT WAS DISCUSSED\n——————————————————\n• \n\nKEY DECISIONS\n——————————————————\n• \n\nACTION ITEMS\n——————————————————\n• \n\nFOLLOW-UPS & COMMITMENTS\n——————————————————\n• `;
-  const [notes, setNotes] = useState(prefillData?.title ? `## What was discussed\n- ${prefillData.title}\n\n## Key decisions\n- \n\n## Action items\n- \n\n## Follow-ups / Commitments\n- ` : '');
+  const [discussions, setDiscussions] = useState(prefillData?.title ? `${prefillData.title}` : '');
+  const [actionItems, setActionItems] = useState('');
+  const [followups, setFollowups] = useState('');
 
   const [aiError, setAiError] = useState(false);
   const [pendingSave, setPendingSave] = useState<PendingSave | null>(null);
@@ -50,8 +50,16 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
   const [taskDrafts, setTaskDrafts] = useState<TaskDraft[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { isRecording, transcript, setTranscript, interim, seconds, isSupported, error: speechError, toggleRec, reset } = useSpeech();
   const { summarize, isProcessing } = useAI();
+
+  const buildRawNotes = () => {
+    const parts: string[] = [];
+    if (who.trim()) parts.push(`TOPIC: ${who.trim()}`);
+    if (discussions.trim()) parts.push(`KEY DISCUSSIONS:\n${discussions.trim()}`);
+    if (actionItems.trim()) parts.push(`ACTION ITEMS:\n${actionItems.trim()}`);
+    if (followups.trim()) parts.push(`FOLLOW-UPS:\n${followups.trim()}`);
+    return parts.join('\n\n');
+  };
 
   const buildMeeting = (save: PendingSave, tasks: Task[]): Meeting => ({
     id: Date.now().toString(),
@@ -71,15 +79,15 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
 
   const doSave = (save: PendingSave, tasks: Task[] = []) => {
     onSave(buildMeeting(save, tasks));
-    reset();
     onClose();
   };
 
   const handleSummarize = async () => {
     if (!who.trim()) return alert('Who was the meeting with?');
-    const finalRaw = notes.trim() || transcript.trim();
-    if (!finalRaw) return alert('Add notes or record your voice');
-    if (isRecording) toggleRec();
+    const finalRaw = buildRawNotes();
+    if (!finalRaw.trim() || (!discussions.trim() && !actionItems.trim() && !followups.trim())) {
+      return alert('Add notes in at least one section');
+    }
 
     setAiError(false);
     setPendingSave(null);
@@ -94,7 +102,7 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
       type,
       projId,
       result,
-      isVoice: !!transcript.trim(),
+      isVoice: false,
     };
 
     if (!result.aiSucceeded) {
@@ -154,12 +162,6 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
 
   const addDraft = () =>
     setTaskDrafts(prev => [...prev, { id: uid(), text: '', assignee: who.trim(), email: '', dueDate: '' }]);
-
-  const formatTime = (sec: number) => {
-    const m = String(Math.floor(sec / 60)).padStart(2, '0');
-    const s = String(sec % 60).padStart(2, '0');
-    return `${m}:${s}`;
-  };
 
   const selectCls = `finput appearance-none cursor-pointer bg-[url('data:image/svg+xml,%3Csvg_xmlns=%22http://www.w3.org/2000/svg%22_width=%2211%22_height=%2211%22_viewBox=%220_0_24_24%22_fill=%22none%22_stroke=%22%235a5446%22_stroke-width=%222%22%3E%3Cpath_d=%22M6_9l6_6_6-6%22/%3E%3C/svg%3E')] bg-no-repeat bg-[right_12px_center] pr-8`;
 
@@ -358,110 +360,43 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
             </select>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-ink3 mb-[7px] font-mono">Record or type your recap</label>
-
-            <div className={`bg-paper2 border-[1.5px] border-dashed rounded-[14px] p-[18px] flex flex-col gap-3.5 transition-colors duration-200
-              ${isRecording ? 'border-ink3/40 bg-paper4' : 'border-line2'}`}>
-
-              {!isSupported && (
-                <div className="bg-amber-bg border border-amber/20 text-amber-ink rounded-[8px] p-2.5 px-3 text-[12px] leading-[1.6]">
-                  Your browser doesn't support voice recording. Use Chrome or Edge, or type your notes below.
-                </div>
-              )}
-              {speechError && (
-                <div className="bg-red-bg border border-red/20 text-red-ink rounded-[8px] p-2.5 px-3 text-[12px] leading-[1.6] flex items-start gap-2">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-[1px]" />
-                  {speechError}
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 flex-wrap">
-                <button
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full border-[1.5px] font-sans text-[13px] font-medium cursor-pointer transition-all duration-150 tracking-[-0.1px]
-                    ${isRecording
-                      ? 'bg-paper text-ink border-ink3/50 hover:bg-paper3'
-                      : 'bg-paper3 border-line2 text-ink hover:border-ink3 hover:bg-paper4'
-                    }`}
-                  onClick={toggleRec}
-                  disabled={!isSupported || isProcessing}
-                >
-                  {isRecording ? (
-                    <>
-                      <div className="w-[8px] h-[8px] rounded-full bg-current shrink-0 animate-[pulseDot_1s_ease_infinite]" />
-                      <Square className="w-[12px] h-[12px]" /> Stop
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-[8px] h-[8px] rounded-full bg-lime shrink-0" />
-                      <Mic className="w-[12px] h-[12px]" /> Record
-                    </>
-                  )}
-                </button>
-                {isRecording && (
-                  <span className="text-[12px] text-ink4 font-mono tabular-nums">{formatTime(seconds)}</span>
-                )}
-                {!isRecording && transcript && (
-                  <button
-                    onClick={reset}
-                    disabled={isProcessing}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-line2 hover:border-red/40 hover:bg-red-bg/50 text-red-ink/90 hover:text-red transition-colors font-sans text-[12px] font-medium ml-auto"
-                  >
-                    <Trash className="w-[14px] h-[14px] opacity-70" /> Discard
-                  </button>
-                )}
-              </div>
-
+          {/* Structured notes */}
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-ink3 mb-[7px] font-mono">Key Discussions</label>
               <textarea
-                className={`w-full min-h-[64px] bg-paper3 border border-line rounded-[10px] p-3 px-3.5 text-[13px] leading-[1.65] transition-colors resize-y outline-none focus:border-ink3/50
-                  ${(transcript || interim) ? 'text-ink' : 'text-ink3 italic'}`}
-                value={isRecording && interim ? transcript + ' ' + interim : transcript}
-                onChange={(e) => setTranscript(e.target.value)}
-                disabled={isRecording || isProcessing}
-                placeholder="Tap record and speak — your words appear here in real time. Pause to edit them."
+                className="finput resize-y leading-[1.75] font-mono text-[12.5px]"
+                placeholder="What was covered in this meeting?"
+                rows={4}
+                value={discussions}
+                onChange={e => setDiscussions(e.target.value)}
+                disabled={isProcessing}
               />
             </div>
 
-            <div className="flex items-center gap-3 text-[11px] text-ink4 tracking-[0.06em] my-3.5 font-mono
-              before:content-[''] before:flex-1 before:h-px before:bg-line
-              after:content-[''] after:flex-1 after:h-px after:bg-line">
-              or type
+            <div>
+              <label className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-ink3 mb-[7px] font-mono">Action Items</label>
+              <textarea
+                className="finput resize-y leading-[1.75] font-mono text-[12.5px]"
+                placeholder="• One item per line"
+                rows={3}
+                value={actionItems}
+                onChange={e => setActionItems(e.target.value)}
+                disabled={isProcessing}
+              />
             </div>
 
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] text-ink3 font-mono tracking-wider uppercase">Notes</span>
-              {!notes && (
-                <button
-                  type="button"
-                  onClick={() => setNotes(TEMPLATE)}
-                  disabled={isProcessing}
-                  className="flex items-center gap-1.5 text-[11px] font-medium font-mono text-ink3 hover:text-lime border border-line2 hover:border-lime/30 px-2.5 py-1 rounded-[7px] transition-all duration-150"
-                >
-                  <FileText className="w-[11px] h-[11px]" />
-                  Use template
-                </button>
-              )}
-              {notes && (
-                <button
-                  type="button"
-                  onClick={() => setNotes('')}
-                  disabled={isProcessing}
-                  className="flex items-center gap-1.5 text-[11px] font-medium font-mono text-ink4 hover:text-red-ink border border-transparent hover:border-red/20 px-2.5 py-1 rounded-[7px] transition-all duration-150"
-                >
-                  <Trash className="w-[11px] h-[11px]" />
-                  Clear
-                </button>
-              )}
+            <div>
+              <label className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-ink3 mb-[7px] font-mono">Follow-ups</label>
+              <textarea
+                className="finput resize-y leading-[1.75] font-mono text-[12.5px]"
+                placeholder="• Follow-ups and commitments"
+                rows={3}
+                value={followups}
+                onChange={e => setFollowups(e.target.value)}
+                disabled={isProcessing}
+              />
             </div>
-
-            <textarea
-              className="finput resize-y min-h-[200px] leading-[1.75] font-mono text-[12.5px]"
-              placeholder="Use the template button above, or write freely here..."
-              rows={8}
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              disabled={isProcessing}
-            />
           </div>
 
           {isProcessing && (

@@ -9,6 +9,7 @@ import { ProjectModal } from './components/ProjectModal';
 import { NewRecapModal } from './components/NewRecapModal';
 import { EditRecapModal } from './components/EditRecapModal';
 import { AskCluey } from './components/AskCluey';
+import { ReviewReminder } from './components/ReviewReminder';
 import { useStorage } from './hooks/useStorage';
 import { useCalendar } from './hooks/useCalendar';
 import { useAuth } from './context/AuthContext';
@@ -19,7 +20,7 @@ import type { ViewType, Meeting, CalendarEvent } from './types';
 
 function MainApp({ userId, accessToken }: { userId: string; accessToken: string | null }) {
   const { user } = useAuth();
-  const { meetings, projects, addMeeting, updateMeeting, deleteMeeting, openTasksCount, addProject } = useStorage(userId);
+  const { meetings, projects, addMeeting, updateMeeting, deleteMeeting, openTasksCount, addProject, updateProject, deleteProject } = useStorage(userId);
 
   const [view, setView] = useState<ViewType>('all');
   const [selectedProjId, setSelectedProjId] = useState<string | null>(null);
@@ -30,6 +31,7 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
   const [isProjModalOpen, setIsProjModalOpen] = useState(false);
   const [showAsk, setShowAsk] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [dismissedReminders, setDismissedReminders] = useState<Set<string>>(new Set());
 
   // Dark mode — persisted
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
@@ -195,6 +197,12 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
           onOpenMeeting={openMeeting}
         />
       )}
+
+      <ReviewReminder
+        projects={projects.filter(p => !dismissedReminders.has(p.id))}
+        onDismiss={(id) => setDismissedReminders(prev => new Set([...prev, id]))}
+        onUpdateProject={updateProject}
+      />
 
       {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
     </div>
