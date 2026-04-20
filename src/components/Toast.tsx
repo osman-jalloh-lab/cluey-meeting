@@ -8,9 +8,20 @@ export const Toast: React.FC<{ message: string; onClose: () => void }> = ({ mess
   }, [onClose]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-[999] bg-paper3 border border-line2 text-ink rounded-[10px] px-4 py-[11px] text-[13px] flex items-center gap-2.5 shadow-card-hover animate-[toastUp_0.25s_cubic-bezier(0.34,1.15,0.64,1)] font-sans">
-      <div className="w-[18px] h-[18px] rounded-full bg-lime-bg flex items-center justify-center shrink-0">
-        <Check className="w-3 h-3 text-lime" strokeWidth={2.5} />
+    <div style={{
+      position: 'fixed', bottom: 24, right: 24, zIndex: 999,
+      background: 'var(--paper)',
+      border: '1px solid var(--line)',
+      borderRadius: 'var(--r-md)',
+      padding: '11px 16px',
+      font: '400 13px/1.4 var(--font-ui)',
+      color: 'var(--ink)',
+      display: 'flex', alignItems: 'center', gap: 10,
+      boxShadow: 'var(--shadow-pop)',
+      animation: 'toastUp .25s cubic-bezier(0.34,1.15,0.64,1)',
+    }}>
+      <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--ok-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Check size={11} strokeWidth={2.5} style={{ color: 'var(--ok-ink)' }} />
       </div>
       {message}
     </div>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { CheckCircle2, ChevronRight, Mic, Trash2 } from 'lucide-react';
+import { Mic, Trash2, CheckCircle2, Clock } from 'lucide-react';
 import type { Meeting, Project } from '../types';
-import { avaColor, initials } from '../utils/avatar';
+import { initials } from '../utils/avatar';
 import { fmtDate } from '../utils/dates';
 
 interface MeetingCardProps {
@@ -13,107 +13,124 @@ interface MeetingCardProps {
   index: number;
 }
 
-export const MeetingCard: React.FC<MeetingCardProps> = ({ meeting, project, isSelected, onClick, onDelete, index }) => {
-  const openCount = meeting.commitments.filter(c => !c.done).length;
-  const { bg, fg } = avaColor(meeting.person);
-  const ini = initials(meeting.person);
+function hueFor(str: string) {
+  let h = 0;
+  for (const c of str) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return h % 360;
+}
 
-  const firstAction     = meeting.actions?.[0];
-  const firstCommitment = meeting.commitments?.filter(c => !c.done)[0]?.text;
-  const firstDecision   = meeting.decisions?.[0];
+function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+  const h = hueFor(name);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: `oklch(0.88 0.06 ${h})`, color: `oklch(0.3 0.1 ${h})`,
+      display: 'grid', placeItems: 'center',
+      font: `500 ${Math.round(size * 0.38)}px/1 var(--font-ui)`,
+      letterSpacing: 0.5,
+    }}>
+      {initials(name)}
+    </div>
+  );
+}
+
+export const MeetingCard: React.FC<MeetingCardProps> = ({ meeting, project, isSelected, onClick, onDelete }) => {
+  const openCount = meeting.commitments.filter(c => !c.done).length;
+  const openTasks = (meeting.tasks || []).filter(t => !t.done).length;
+  const totalOpen = openCount + openTasks;
+  const borderColor = project?.color || 'var(--ink-3)';
 
   return (
-    <div
-      className={`bg-paper3 rounded-[14px] p-[18px] pb-4 cursor-pointer transition-all duration-200 relative overflow-hidden
-        before:content-[''] before:absolute before:left-0 before:top-3 before:bottom-3 before:w-[3px] before:rounded-r-[3px] before:transition-all before:duration-200
-        animate-[cardIn_0.3s_cubic-bezier(0.34,1.15,0.64,1)_both]
-        ${isSelected
-          ? 'shadow-lime-glow border border-lime/20 before:bg-lime'
-          : 'border border-line hover:border-line2 hover:shadow-card-hover hover:-translate-y-[1px] before:bg-transparent hover:before:bg-ink4'
-        }`}
-      style={{ animationDelay: `${index * 40}ms` }}
+    <article
       onClick={onClick}
+      style={{
+        background: 'var(--paper-2)',
+        border: `1px solid ${isSelected ? 'color-mix(in oklch, var(--accent) 35%, transparent)' : 'var(--line)'}`,
+        borderLeft: `3px solid ${isSelected ? 'var(--accent)' : borderColor}`,
+        borderRadius: 'var(--r-md)',
+        padding: '20px 22px',
+        cursor: 'pointer',
+        transition: 'transform .12s, border-color .15s, box-shadow .15s',
+        boxShadow: isSelected ? '0 0 0 3px var(--accent-ring)' : 'none',
+        position: 'relative',
+      }}
+      onMouseEnter={e => {
+        if (!isSelected) {
+          (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+          (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-card)';
+        }
+      }}
+      onMouseLeave={e => {
+        if (!isSelected) {
+          (e.currentTarget as HTMLElement).style.transform = 'none';
+          (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+        }
+      }}
     >
-      {/* Person row */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-[34px] h-[34px] rounded-full flex items-center justify-center font-semibold font-sans text-[11px] shrink-0 ring-1 ring-white/10"
-            style={{ background: bg, color: fg }}
-          >
-            {ini || '?'}
-          </div>
-          <div>
-            <div className="text-[14px] font-medium text-ink mb-[2px] tracking-[-0.15px]">{meeting.person}</div>
-            <div className="text-[11px] text-ink3 flex items-center gap-1.5 font-mono">
-              <span>{fmtDate(meeting.createdAt)}</span>
-              <span className="text-ink4">·</span>
-              <span>{meeting.type || '1:1'}</span>
-              {meeting.isVoice && (
-                <>
-                  <span className="text-ink4">·</span>
-                  <span className="flex items-center gap-[3px] text-lime/60">
-                    <Mic className="w-2.5 h-2.5" /> Voice
-                  </span>
-                </>
-              )}
-            </div>
+      {/* Header */}
+      <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <Avatar name={meeting.person} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ font: '500 14px/1.2 var(--font-ui)', color: 'var(--ink)' }}>{meeting.person}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+            {project && (
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: project.color, display: 'inline-block' }} />
+            )}
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-3)', letterSpacing: '0.02em' }}>
+              {project?.name && `${project.name} · `}{meeting.type} · {fmtDate(meeting.createdAt)}
+            </span>
           </div>
         </div>
-
-        {project && (
-          <span
-            className="text-[11px] font-medium px-2.5 py-[3px] rounded-full whitespace-nowrap shrink-0 font-sans tracking-[-0.1px] ring-1 ring-white/5"
-            style={{ background: project.color + '22', color: project.color }}
-          >
-            {project.name}
-          </span>
+        {meeting.isVoice && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <Mic size={11} /> Voice
+          </div>
         )}
-      </div>
+      </header>
 
-      {/* Summary */}
-      <div className="text-[13px] text-ink2 leading-[1.65] mb-3 line-clamp-3">
+      {/* Summary — Fraunces display type */}
+      <p style={{
+        margin: 0,
+        fontFamily: 'var(--font-display)', fontWeight: 300,
+        fontSize: 15.5, lineHeight: 1.55,
+        color: 'var(--ink-2)',
+        display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        letterSpacing: '-0.05px',
+      }}>
         {meeting.summary}
-      </div>
-
-      {/* Chips */}
-      {(firstAction || firstCommitment || firstDecision) && (
-        <div className="flex gap-1.5 flex-wrap mb-3.5">
-          {firstAction && (
-            <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full flex items-center gap-1 font-sans bg-amber-bg text-amber-ink ring-1 ring-amber/10">
-              <ChevronRight className="w-2.5 h-2.5" />
-              {firstAction.length > 42 ? firstAction.slice(0, 42) + '…' : firstAction}
-            </span>
-          )}
-          {firstCommitment && (
-            <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full flex items-center gap-1 font-sans bg-blue-bg text-blue-ink ring-1 ring-blue/10">
-              {firstCommitment.length > 42 ? firstCommitment.slice(0, 42) + '…' : firstCommitment}
-            </span>
-          )}
-          {firstDecision && (
-            <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full flex items-center gap-1 font-sans bg-teal-bg text-teal-ink ring-1 ring-teal/10">
-              {firstDecision.length > 42 ? firstDecision.slice(0, 42) + '…' : firstDecision}
-            </span>
-          )}
-        </div>
-      )}
+      </p>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2.5 border-t border-line">
-        <div className={`text-[11px] flex items-center gap-1.5 font-mono ${openCount ? 'text-red/80' : 'text-teal/80'}`}>
-          {openCount ? (
-            <><div className="w-[10px] h-[10px] rounded-full border-[1.5px] border-current" /> {openCount} open</>
-          ) : (
-            <><CheckCircle2 className="w-[11px] h-[11px]" /> All done</>
-          )}
-        </div>
+      <footer style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)' }}>
+        {meeting.decisions.length > 0 && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-3)', fontSize: 12 }}>
+            <CheckCircle2 size={13} style={{ color: 'var(--accent)' }} />
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{meeting.decisions.length}</span>
+            <span style={{ color: 'var(--ink-4)' }}>{meeting.decisions.length === 1 ? 'decision' : 'decisions'}</span>
+          </span>
+        )}
+        {totalOpen > 0 && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-3)', fontSize: 12 }}>
+            <Clock size={13} />
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{totalOpen}</span>
+            <span style={{ color: 'var(--ink-4)' }}>open</span>
+          </span>
+        )}
+        {totalOpen === 0 && meeting.decisions.length === 0 && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--ok-ink)', fontSize: 12 }}>
+            <CheckCircle2 size={13} /> All done
+          </span>
+        )}
+        <span style={{ flex: 1 }} />
         <button
-          className="w-7 h-7 rounded-[6px] bg-transparent border-none text-ink4 hover:bg-paper4 hover:text-red flex items-center justify-center cursor-pointer transition-colors"
           onClick={onDelete}
+          style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid transparent', background: 'transparent', cursor: 'pointer', color: 'var(--ink-4)', display: 'grid', placeItems: 'center', transition: 'color .15s, background .15s, border-color .15s' }}
+          onMouseEnter={e => { const el = e.currentTarget; el.style.color = 'var(--late-ink)'; el.style.background = 'var(--late-bg)'; el.style.borderColor = 'color-mix(in oklch, var(--late-ink) 30%, transparent)'; }}
+          onMouseLeave={e => { const el = e.currentTarget; el.style.color = 'var(--ink-4)'; el.style.background = 'transparent'; el.style.borderColor = 'transparent'; }}
         >
-          <Trash2 className="w-[13px] h-[13px]" />
+          <Trash2 size={13} />
         </button>
-      </div>
-    </div>
+      </footer>
+    </article>
   );
 };

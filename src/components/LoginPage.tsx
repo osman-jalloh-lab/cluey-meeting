@@ -1,51 +1,71 @@
 import React from 'react';
-import { Hexagon, LogIn, Lock, User } from 'lucide-react';
+import { LogIn, Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+function LogoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={26} height={26} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 12a5 5 0 0 1 8 0"/>
+      <path d="M5 8a9 9 0 0 1 14 0"/>
+      <circle cx="12" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
 
 export const LoginPage: React.FC = () => {
   const { login, loginAsGuest } = useAuth();
 
   return (
-    <div className="flex h-screen items-center justify-center bg-paper text-ink font-sans relative overflow-hidden">
-      {/* Background aesthetics */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-lime/10 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue/5 blur-[100px] rounded-full pointer-events-none" />
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)', overflow: 'hidden', position: 'relative' }}>
+      {/* Soft background accent */}
+      <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 600, background: 'var(--accent-soft)', borderRadius: '50%', filter: 'blur(120px)', pointerEvents: 'none', opacity: 0.6 }} />
 
-      {/* Main Card */}
-      <div className="relative z-10 w-[420px] max-w-[90vw] bg-paper2/80 backdrop-blur-xl border border-white/5 rounded-[24px] p-10 flex flex-col items-center text-center shadow-card-hover animate-[modalIn_0.8s_cubic-bezier(0.16,1,0.3,1)]">
-        <div className="w-[60px] h-[60px] bg-lime rounded-[16px] flex items-center justify-center shadow-lime-glow mb-6">
-          <Hexagon className="w-8 h-8 text-paper stroke-[2.5px]" />
+      <div style={{
+        position: 'relative', zIndex: 1,
+        width: 420, maxWidth: '90vw',
+        background: 'var(--paper)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--r-xl)',
+        padding: '48px 40px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+        boxShadow: 'var(--shadow-pop)',
+        animation: 'modalIn .8s cubic-bezier(0.16,1,0.3,1)',
+      }}>
+        {/* Logo */}
+        <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--ink)', color: 'var(--paper)', display: 'grid', placeItems: 'center', marginBottom: 20 }}>
+          <LogoIcon />
         </div>
-        
-        <h1 className="font-serif text-[32px] font-normal tracking-[-0.6px] leading-[1.1] mb-3">
-          Clue<em className="font-light italic text-ink2">y</em>
+
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontStyle: 'italic', fontSize: 40, letterSpacing: '-1px', lineHeight: 1.05, margin: '0 0 12px', color: 'var(--ink)' }}>
+          cluey
         </h1>
-        
-        <p className="text-[14px] text-ink2 leading-relaxed mb-8 max-w-[280px]">
-          Your private, AI-powered meeting memory. Log in to keep your recaps and calendar synced seamlessly.
+
+        <p style={{ fontSize: 14, color: 'var(--ink-3)', lineHeight: 1.65, margin: '0 0 32px', maxWidth: 280 }}>
+          Your private, AI-powered meeting memory. Keep your recaps and calendar synced.
         </p>
 
-        <div className="flex flex-col gap-3 w-full">
-          <button 
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+          <button
             onClick={() => login()}
-            className="flex items-center justify-center gap-3 bg-paper3 border border-line2 hover:border-lime/40 text-ink px-6 py-3.5 rounded-[12px] font-medium text-[14px] transition-all duration-300 hover:shadow-lime-glow group w-full active:scale-[0.98]"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '12px 20px', borderRadius: 'var(--r-md)', background: 'var(--ink)', color: 'var(--paper)', border: '1px solid var(--ink)', font: '500 14px/1 var(--font-ui)', cursor: 'pointer', transition: 'background .15s, border-color .15s', width: '100%' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--ink)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--ink)'; }}
           >
-            <LogIn className="w-4 h-4 text-ink3 group-hover:text-lime transition-colors" />
-            Continue with Google
+            <LogIn size={16} /> Continue with Google
           </button>
 
-          <button 
+          <button
             onClick={() => loginAsGuest()}
-            className="flex items-center justify-center gap-3 bg-paper border border-line hover:border-line2 text-ink2 px-6 py-3.5 rounded-[12px] font-medium text-[14px] transition-all duration-300 group w-full active:scale-[0.98]"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '12px 20px', borderRadius: 'var(--r-md)', background: 'var(--paper-2)', color: 'var(--ink-2)', border: '1px solid var(--line)', font: '500 14px/1 var(--font-ui)', cursor: 'pointer', transition: 'background .15s', width: '100%' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--paper-3)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--paper-2)'}
           >
-            <User className="w-4 h-4 text-ink4 group-hover:text-ink2 transition-colors" />
-            Continue as Guest
+            <User size={16} /> Continue as Guest
           </button>
         </div>
 
-        <div className="flex items-center gap-2 mt-8 text-[11px] text-ink4 font-mono">
-          <Lock className="w-3 h-3" />
-          Secure OAuth 2.0 connection
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 28, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)' }}>
+          <Lock size={11} /> Secure OAuth 2.0 connection
         </div>
       </div>
     </div>

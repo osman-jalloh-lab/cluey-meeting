@@ -1,7 +1,8 @@
 import React from 'react';
-import { Plus, ListTodo, Users, FolderPlus, Hexagon, Calendar as CalendarIcon, ChevronRight, Check } from 'lucide-react';
+import { Plus, FolderPlus, Download, ChevronRight, Moon, Sun, Sparkles } from 'lucide-react';
 import type { Project, ViewType, CalendarEvent } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { initials } from '../utils/avatar';
 
 interface SidebarProps {
   view: ViewType;
@@ -13,176 +14,213 @@ interface SidebarProps {
   totalMeetingsCount: number;
   onNewRecap: () => void;
   onAddProject: () => void;
+  onAsk: () => void;
   calendarEvents: CalendarEvent[];
+  calendarLoading: boolean;
   onRecapEvent: (e: CalendarEvent) => void;
+  onExport: () => void;
+  theme: 'light' | 'dark';
+  setTheme: (t: 'light' | 'dark') => void;
+}
+
+function LogoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={17} height={17} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 12a5 5 0 0 1 8 0"/>
+      <path d="M5 8a9 9 0 0 1 14 0"/>
+      <circle cx="12" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
+
+const NAV: Array<{ id: ViewType; label: string; icon: React.ReactNode }> = [
+  { id: 'all',         label: 'Feed',        icon: <><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></> },
+  { id: 'people',      label: 'People',      icon: <><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.5 0 4.5 1.5 5 4"/></> },
+  { id: 'commitments', label: 'Commitments', icon: <polyline points="4,12 10,18 20,6"/> },
+];
+
+function NavSvg({ children }: { children: React.ReactNode }) {
+  return (
+    <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
+  );
+}
+
+function fmtTime(iso: string) {
+  return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(iso)).toLowerCase();
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   view, setView, projects, selectedProjId, setSelectedProjId,
-  openCommitmentsCount, totalMeetingsCount, onNewRecap, onAddProject,
-  calendarEvents, onRecapEvent
+  openCommitmentsCount, totalMeetingsCount, onNewRecap, onAddProject, onAsk,
+  calendarEvents, calendarLoading, onRecapEvent, onExport,
+  theme, setTheme,
 }) => {
   const { user, logout } = useAuth();
-  
-  const isAll     = view === 'all';
-  const isPeople  = view === 'people';
-  const isCommits = view === 'commitments';
-
-  const selectProj = (id: string) => { setView('project'); setSelectedProjId(id); };
-
-  const navItem = (active: boolean, onClick: () => void, icon: React.ReactNode, label: string, badge?: number) => (
-    <div
-      className={`flex items-center gap-2 px-2.5 py-[7px] rounded-[8px] cursor-pointer text-[13px] duration-150 mb-px select-none transition-all
-        ${active
-          ? 'bg-paper3 text-ink font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
-          : 'text-ink3 hover:bg-paper3/60 hover:text-ink2'
-        }`}
-      onClick={onClick}
-    >
-      <span className={`shrink-0 transition-opacity ${active ? 'opacity-90' : 'opacity-40'}`}>{icon}</span>
-      <span className="flex-1 leading-none">{label}</span>
-      {badge !== undefined && (
-        <span className={`text-[10px] font-mono font-medium px-[7px] py-[1px] rounded-full tabular-nums
-          ${active ? 'bg-paper4 text-ink2' : 'bg-paper3 text-ink3'}`}>
-          {badge}
-        </span>
-      )}
-    </div>
-  );
-
-  const formatShortTime = (iso: string) => {
-    return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(iso)).toLowerCase();
-  };
+  const isGuest = user?.email === 'guest@cluey.app';
 
   return (
-    <aside className="w-[248px] min-w-[248px] bg-paper border-r border-line flex flex-col h-full overflow-hidden z-10">
-      {/* Logo */}
-      <div className="p-5 pb-4">
-        <div className="flex items-center gap-[9px] mb-[18px]">
-          <div className="w-[30px] h-[30px] bg-lime rounded-lg flex items-center justify-center shrink-0 shadow-lime-glow">
-            <Hexagon className="w-3.5 h-3.5 text-paper stroke-[2.5px]" />
-          </div>
-          <span className="font-serif text-[19px] tracking-[-0.5px] leading-none text-ink">
-            Clue<em className="font-light italic text-ink2">y</em>
-          </span>
+    <aside style={{
+      width: 252, flexShrink: 0, display: 'flex', flexDirection: 'column',
+      borderRight: '1px solid var(--line)', background: 'var(--paper-2)',
+      height: '100vh', position: 'sticky', top: 0,
+    }}>
+      {/* Wordmark */}
+      <div style={{ padding: '20px 18px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--ink)', color: 'var(--paper)', display: 'grid', placeItems: 'center' }}>
+          <LogoIcon />
         </div>
-
+        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontStyle: 'italic', fontSize: 22, letterSpacing: '-0.5px', color: 'var(--ink)' }}>
+          cluey
+        </span>
+        <span style={{ flex: 1 }} />
         <button
-          className="btn btn-dark w-full flex items-center justify-center gap-2 text-[13px]"
-          onClick={onNewRecap}
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          aria-label="Toggle theme"
+          style={{ background: 'transparent', border: '1px solid var(--line)', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}
         >
-          <Plus className="w-[14px] h-[14px]" strokeWidth={2.5} />
-          New recap
+          {theme === 'dark' ? <Sun size={14} strokeWidth={1.6} /> : <Moon size={14} strokeWidth={1.6} />}
         </button>
       </div>
 
+      {/* New recap */}
+      <div style={{ padding: '0 14px 12px' }}>
+        <button className="btn btn-primary" style={{ width: '100%' }} onClick={onNewRecap}>
+          <Plus size={14} strokeWidth={2.2} /> New recap
+        </button>
+      </div>
+
+      {/* Ask cluey */}
+      <div style={{ padding: '0 14px 10px' }}>
+        <button
+          onClick={onAsk}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px 8px 11px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', color: 'var(--ink-3)', font: '400 13px/1 var(--font-ui)', cursor: 'pointer', transition: 'border-color .15s, color .15s' }}
+          onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--ink-2)'; }}
+          onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--line)'; el.style.color = 'var(--ink-3)'; }}
+        >
+          <Sparkles size={14} strokeWidth={1.6} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <span style={{ flex: 1, textAlign: 'left' }}>Ask cluey…</span>
+          <span className="kbd">⌘K</span>
+        </button>
+      </div>
+
+      {isGuest && (
+        <div style={{ margin: '0 14px 10px', padding: '10px 12px', background: 'var(--warn-bg)', border: '1px solid color-mix(in oklch, var(--warn-ink) 25%, transparent)', borderRadius: 8 }}>
+          <p style={{ margin: 0, fontSize: 11, lineHeight: 1.5, color: 'var(--warn-ink)' }}>
+            Guest mode — data saved in this browser only.
+          </p>
+        </div>
+      )}
+
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-2.5 pb-4 custom-scrollbar">
-        <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-ink4 px-2 py-3 pb-1.5 font-mono">
-          Views
-        </div>
-
-        {navItem(isAll, () => { setView('all'); setSelectedProjId(null); },
-          <ListTodo className="w-3.5 h-3.5" />, 'All meetings', totalMeetingsCount)}
-
-        {navItem(isPeople, () => setView('people'),
-          <Users className="w-3.5 h-3.5" />, 'People')}
-
-        {navItem(isCommits, () => setView('commitments'),
-          <Check className="w-3.5 h-3.5" />, 'Commitments', openCommitmentsCount || 0)}
-
-        {/* Calendar Section */}
-        <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-ink4 px-2 py-3 pb-1.5 mt-1.5 font-mono flex items-center gap-1.5">
-          <CalendarIcon className="w-3 h-3 text-ink4/60" />
-          Today's Schedule
-        </div>
-        
-        <div className="flex flex-col gap-1 mt-1">
-          {calendarEvents.length === 0 ? (
-            <div className="text-[12px] text-ink3 px-3 py-1.5 italic">No events today.</div>
-          ) : (
-            calendarEvents.map(e => (
-              <div key={e.id} className="group flex flex-col relative px-3 py-2 rounded-[8px] hover:bg-paper3 transition-colors text-[12px]">
-                <div className="flex justify-between items-start mb-0.5">
-                  <span className="font-medium text-ink2 group-hover:text-ink transition-colors line-clamp-1 pr-6">{e.title}</span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-ink4 font-mono">
-                   <span className={e.status === 'past' ? 'text-ink3' : ''}>
-                     {formatShortTime(e.startTime)}
-                   </span>
-                   {e.status === 'past' && (
-                     <button 
-                       onClick={() => onRecapEvent(e)}
-                       className="absolute right-2 top-1/2 -translate-y-1/2 text-lime opacity-0 group-hover:opacity-100 transition-opacity bg-lime-bg px-1.5 py-0.5 rounded-[4px] border border-lime/20 flex items-center font-sans tracking-wide"
-                     >
-                       Recap <ChevronRight className="w-3 h-3" />
-                     </button>
-                   )}
-                   {e.status === 'upcoming' && (
-                     <button 
-                       onClick={() => onRecapEvent(e)}
-                       className="absolute right-2 top-1/2 -translate-y-1/2 text-ink3 opacity-0 group-hover:opacity-100 transition-opacity hover:text-ink flex items-center font-sans tracking-wide"
-                     >
-                       Recap 
-                     </button>
-                   )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-ink4 px-2 py-3 pb-1.5 mt-1.5 font-mono">
-          Projects
-        </div>
-
-        {projects.map(p => {
-          const isSel = view === 'project' && selectedProjId === p.id;
+      <nav style={{ padding: '4px 10px' }}>
+        {NAV.map(item => {
+          const active = view === item.id;
+          const badge = item.id === 'commitments' ? openCommitmentsCount : item.id === 'all' ? totalMeetingsCount : 0;
           return (
-            <div
-              key={p.id}
-              className={`flex items-center gap-2 px-2.5 py-[7px] rounded-[8px] cursor-pointer text-[13px] duration-150 mb-px select-none transition-all
-                ${isSel ? 'bg-paper3 text-ink font-medium' : 'text-ink3 hover:bg-paper3/60 hover:text-ink2'}`}
-              onClick={() => selectProj(p.id)}
+            <button
+              key={item.id}
+              onClick={() => { setView(item.id); setSelectedProjId(null); }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '8px 10px', border: 0, background: active ? 'var(--paper-3)' : 'transparent', color: active ? 'var(--ink)' : 'var(--ink-2)', borderRadius: 7, font: '500 13px/1 var(--font-ui)', cursor: 'pointer', textAlign: 'left', marginBottom: 2 }}
             >
-              <span
-                className="w-[7px] h-[7px] rounded-full shrink-0 ring-1 ring-white/10"
-                style={{ background: p.color }}
-              />
-              {p.name}
-            </div>
+              <NavSvg>{item.icon}</NavSvg>
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {badge > 0 && (
+                <span style={{ font: '500 10px/1 var(--font-mono)', color: active ? 'var(--ink)' : 'var(--ink-4)', background: active ? 'var(--paper-4)' : 'transparent', padding: '2px 6px', borderRadius: 20 }}>{badge}</span>
+              )}
+            </button>
           );
         })}
-
-        <div
-          className="flex items-center gap-2 px-2.5 py-[7px] rounded-[8px] cursor-pointer text-[13px] duration-150 mb-px select-none text-ink3 mt-[2px] hover:bg-paper3/60 hover:text-ink2 transition-all"
-          onClick={onAddProject}
-        >
-          <FolderPlus className="w-3.5 h-3.5 shrink-0 opacity-50" />
-          Add project
-        </div>
       </nav>
 
-      {/* Footer Profile */}
-      <div className="p-3 border-t border-line glass flex items-center justify-between group">
-        <div className="flex items-center gap-2.5 px-2">
-          {user?.picture ? (
-            <img src={user.picture} alt={user.name} className="w-6 h-6 rounded-full" />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-paper3/50 ring-1 ring-line2 flex items-center justify-center shrink-0">
-               <span className="text-[10px] text-ink2">{user?.name?.charAt(0) || '?'}</span>
-            </div>
-          )}
-          <div className="flex flex-col min-w-0">
-             <span className="text-[12px] font-medium text-ink leading-tight truncate max-w-[120px]">{user?.name}</span>
-             <span className="text-[10px] text-ink3 leading-tight truncate max-w-[120px]">{user?.email}</span>
-          </div>
-        </div>
-        <button 
-          onClick={logout}
-          className="px-2 py-1 text-[11px] text-ink3 hover:text-red hover:bg-red/10 rounded-[6px] transition-colors font-medium opacity-0 group-hover:opacity-100"
+      {/* Projects */}
+      <div style={{ padding: '18px 18px 6px' }}>
+        <div className="label">Projects</div>
+      </div>
+      <div style={{ padding: '0 10px' }}>
+        {projects.map(p => {
+          const sel = view === 'project' && selectedProjId === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => { setView('project'); setSelectedProjId(p.id); }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', border: 0, background: sel ? 'var(--paper-3)' : 'transparent', color: sel ? 'var(--ink)' : 'var(--ink-2)', borderRadius: 6, font: '400 13px/1 var(--font-ui)', cursor: 'pointer', textAlign: 'left', marginBottom: 1 }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.color, flexShrink: 0, boxShadow: `0 0 0 3px ${p.color}26` }} />
+              <span style={{ flex: 1 }}>{p.name}</span>
+            </button>
+          );
+        })}
+        <button
+          onClick={onAddProject}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', border: 0, background: 'transparent', color: 'var(--ink-4)', borderRadius: 6, font: '400 13px/1 var(--font-ui)', cursor: 'pointer', textAlign: 'left' }}
         >
-          Log out
+          <FolderPlus size={13} strokeWidth={1.5} style={{ opacity: 0.6 }} /> Add project
+        </button>
+      </div>
+
+      {/* Calendar */}
+      <div style={{ padding: '20px 18px 6px' }}>
+        <div className="label">Today · {new Date().toLocaleDateString('en', { month: 'short', day: 'numeric' })}</div>
+      </div>
+      <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '0 10px 10px' }}>
+        {calendarLoading ? (
+          [1, 2].map(i => (
+            <div key={i} style={{ padding: '8px 10px', marginBottom: 2, display: 'flex', gap: 8 }}>
+              <div style={{ height: 10, width: 34, borderRadius: 4, background: 'var(--paper-3)' }} />
+              <div style={{ flex: 1, height: 10, borderRadius: 4, background: 'var(--paper-3)' }} />
+            </div>
+          ))
+        ) : calendarEvents.length === 0 ? (
+          <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--ink-3)', fontStyle: 'italic' }}>No events today.</div>
+        ) : (
+          calendarEvents.map(ev => (
+            <div key={ev.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '7px 10px', borderRadius: 6, opacity: ev.status === 'past' ? 0.65 : 1, marginBottom: 1 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', paddingTop: 1, minWidth: 36, flexShrink: 0, textDecoration: ev.status === 'past' ? 'line-through' : 'none' }}>
+                {fmtTime(ev.startTime)}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: ev.status === 'past' ? 'line-through' : 'none' }}>
+                  {ev.title}
+                </div>
+                {ev.status === 'upcoming' && ev.attendees.length > 0 && (
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-4)', marginTop: 3 }}>
+                    {ev.attendees.slice(0, 2).join(', ')}
+                  </div>
+                )}
+              </div>
+              {ev.status === 'past' && (
+                <button
+                  onClick={() => onRecapEvent(ev)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 6px', borderRadius: 4, background: 'var(--accent-soft)', color: 'var(--accent-ink)', border: '1px solid color-mix(in oklch, var(--accent) 25%, transparent)', font: '500 10px/1 var(--font-ui)', cursor: 'pointer', flexShrink: 0 }}
+                >
+                  Recap <ChevronRight size={10} />
+                </button>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '12px 14px', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        {user?.picture ? (
+          <img src={user.picture} alt={user.name} style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0 }} />
+        ) : (
+          <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: 'var(--paper-3)', border: '1px solid var(--line)', display: 'grid', placeItems: 'center', font: '500 10px/1 var(--font-ui)', color: 'var(--ink-3)' }}>
+            {initials(user?.name || '?')}
+          </div>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</div>
+          <div style={{ fontSize: 10, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
+        </div>
+        <button onClick={onExport} title="Export" style={{ width: 26, height: 26, borderRadius: 5, border: '1px solid var(--line)', background: 'transparent', cursor: 'pointer', color: 'var(--ink-4)', display: 'grid', placeItems: 'center' }}>
+          <Download size={12} />
+        </button>
+        <button onClick={logout} style={{ padding: '4px 7px', borderRadius: 5, border: '1px solid var(--line)', background: 'transparent', cursor: 'pointer', color: 'var(--ink-4)', font: '500 11px/1 var(--font-ui)' }}>
+          Out
         </button>
       </div>
     </aside>
