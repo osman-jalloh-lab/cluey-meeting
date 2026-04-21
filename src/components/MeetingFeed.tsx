@@ -30,7 +30,7 @@ function StatCard({ label, value, sub, tone, onClick }: { label: string; value: 
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       style={{
-        padding: '14px 16px',
+        padding: '12px 14px',
         background: isAccent ? 'var(--accent-soft)' : 'var(--paper-2)',
         border: `1px solid ${isAccent ? 'color-mix(in oklch, var(--accent) 30%, transparent)' : 'var(--line)'}`,
         borderRadius: 'var(--r-md)',
@@ -41,10 +41,10 @@ function StatCard({ label, value, sub, tone, onClick }: { label: string; value: 
       onMouseLeave={e => onClick && ((e.currentTarget as HTMLElement).style.transform = 'none')}
     >
       <div className="label" style={{ color: isAccent ? 'var(--accent-ink)' : 'var(--ink-3)' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 34, lineHeight: 1, marginTop: 10, color: isAccent ? 'var(--accent-ink)' : 'var(--ink)', letterSpacing: '-0.5px' }}>
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 28, lineHeight: 1, marginTop: 8, color: isAccent ? 'var(--accent-ink)' : 'var(--ink)', letterSpacing: '-0.5px' }}>
         {value}
       </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: tone === 'late' ? 'var(--late-ink)' : isAccent ? 'var(--accent-ink)' : 'var(--ink-3)', marginTop: 9, letterSpacing: '0.02em', opacity: isAccent ? 0.8 : 1 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: tone === 'late' ? 'var(--late-ink)' : isAccent ? 'var(--accent-ink)' : 'var(--ink-3)', marginTop: 7, letterSpacing: '0.02em', opacity: isAccent ? 0.8 : 1 }}>
         {sub}
       </div>
     </div>
@@ -80,17 +80,17 @@ export const MeetingFeed: React.FC<MeetingFeedProps> = ({ meetings, allMeetings,
   }
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 40px 80px' }}>
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 28px 60px' }}>
       {/* Hero */}
-      <div style={{ marginBottom: 40 }}>
-        <div className="label" style={{ marginBottom: 12 }}>{dayName} · {dateStr}</div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 40, lineHeight: 1.08, letterSpacing: '-1px', margin: 0, color: 'var(--ink)' }}>
+      <div style={{ marginBottom: 28 }}>
+        <div className="label" style={{ marginBottom: 10 }}>{dayName} · {dateStr}</div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.1, letterSpacing: '-0.5px', margin: 0, color: 'var(--ink)' }}>
           {getGreeting()}, {firstName}.{' '}
           <em style={{ color: 'var(--ink-3)', fontWeight: 300 }}>Here's where things stand.</em>
         </h1>
 
         {/* Stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginTop: 26 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 20 }}>
           <StatCard label="Meetings this week" value={thisWeek} sub={`${allMeetings.length} total`} />
           <StatCard label="Open items" value={openTotal} sub={openTotal === 0 ? 'All clear!' : `${openCommits} commits · ${openTasks} tasks`} tone={openTotal > 0 ? 'neutral' : 'neutral'} />
           <StatCard label="Ask parawi" value="⌘K" sub="Try 'what did we decide?'" tone="accent" onClick={onAsk} />
@@ -98,7 +98,7 @@ export const MeetingFeed: React.FC<MeetingFeedProps> = ({ meetings, allMeetings,
       </div>
 
       {/* Section heading */}
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, letterSpacing: '-0.3px', margin: 0, color: 'var(--ink)' }}>
           {meetings === allMeetings ? 'Recent recaps' : `Filtered recaps`}
         </h2>

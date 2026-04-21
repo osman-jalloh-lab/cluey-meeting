@@ -8,6 +8,7 @@ import { CommitmentsView } from './components/CommitmentsView';
 import { ProjectModal } from './components/ProjectModal';
 import { NewRecapModal } from './components/NewRecapModal';
 import { EditRecapModal } from './components/EditRecapModal';
+import { InviteModal } from './components/InviteModal';
 import { AskCluey } from './components/AskCluey';
 import { ReviewReminder } from './components/ReviewReminder';
 import { useStorage } from './hooks/useStorage';
@@ -27,8 +28,9 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
   const [isNewRecapOpen, setIsNewRecapOpen] = useState(false);
-  const [newRecapPrefill, setNewRecapPrefill] = useState<{ person: string; title: string } | undefined>(undefined);
+  const [newRecapPrefill, setNewRecapPrefill] = useState<{ person: string; title: string; notes?: string; calendarEventId?: string } | undefined>(undefined);
   const [isProjModalOpen, setIsProjModalOpen] = useState(false);
+  const [inviteProjectId, setInviteProjectId] = useState<string | null>(null);
   const [showAsk, setShowAsk] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [dismissedReminders, setDismissedReminders] = useState<Set<string>>(new Set());
@@ -49,7 +51,12 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  const { events: calendarEvents, isLoading: calendarLoading } = useCalendar(accessToken);
+  const { events: calendarEvents, isLoading: calendarLoading, refreshFn: refreshCalendar } = useCalendar(accessToken);
+
+  const recappedEventIds = React.useMemo(
+    () => new Set(meetings.map(m => m.calendarEventId).filter((id): id is string => !!id)),
+    [meetings]
+  );
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -110,7 +117,7 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
   const openMeeting = (id: string) => { setSelectedMeetingId(id); setShowAsk(false); };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--paper)' }}>
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: 'var(--paper)' }}>
       <Sidebar
         view={view}
         setView={(v) => { setView(v); setSelectedMeetingId(null); }}
@@ -121,13 +128,21 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
         totalMeetingsCount={meetings.length}
         onNewRecap={() => { setNewRecapPrefill(undefined); setIsNewRecapOpen(true); }}
         onAddProject={() => setIsProjModalOpen(true)}
+        onInviteProject={(id) => setInviteProjectId(id)}
         onAsk={() => setShowAsk(true)}
         calendarEvents={calendarEvents}
         calendarLoading={calendarLoading}
         onRecapEvent={(e: CalendarEvent) => {
-          setNewRecapPrefill({ person: e.attendees.join(', ') || 'Someone', title: e.title });
+          setNewRecapPrefill({
+            person: e.attendees.join(', ') || 'Someone',
+            title: e.title,
+            notes: e.description,
+            calendarEventId: e.id,
+          });
           setIsNewRecapOpen(true);
         }}
+        onRefreshCalendar={refreshCalendar}
+        recappedEventIds={recappedEventIds}
         onExport={handleExport}
         theme={theme}
         setTheme={setTheme}
@@ -169,6 +184,17 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
           onSave={(p) => { addProject(p); setIsProjModalOpen(false); showToast('Project created'); }}
         />
       )}
+
+      {inviteProjectId && (() => {
+        const proj = projects.find(p => p.id === inviteProjectId);
+        return proj ? (
+          <InviteModal
+            project={proj}
+            onClose={() => setInviteProjectId(null)}
+            onSave={(id, updates) => { updateProject(id, updates); showToast('Members saved'); setInviteProjectId(null); }}
+          />
+        ) : null;
+      })()}
 
       {isNewRecapOpen && (
         <NewRecapModal
@@ -214,7 +240,7 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)' }}>
+      <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)' }}>
         <Loader2 style={{ width: 24, height: 24, animation: 'spin 1s linear infinite', color: 'var(--ink-3)' }} />
       </div>
     );

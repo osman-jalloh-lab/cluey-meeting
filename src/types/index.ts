@@ -22,7 +22,9 @@ export interface CalendarEvent {
   attendees: string[];
   startTime: string;
   endTime: string;
-  status: string;
+  status: 'past' | 'upcoming';
+  description?: string;
+  location?: string;
 }
 
 export interface Meeting {
@@ -39,6 +41,13 @@ export interface Meeting {
   tags: string[];
   isVoice: boolean;
   createdAt: string;
+  calendarEventId?: string;
+}
+
+export interface ProjectMember {
+  name: string;
+  email: string;
+  invitedAt?: string;
 }
 
 export interface Project {
@@ -48,6 +57,7 @@ export interface Project {
   description?: string;
   reviewIntervalDays?: number;   // 0 = no review
   lastReviewedAt?: string;       // ISO date string
+  members?: ProjectMember[];
 }
 
 export type ViewType = 'all' | 'people' | 'commitments' | 'project';

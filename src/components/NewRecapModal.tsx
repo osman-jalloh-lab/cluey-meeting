@@ -8,7 +8,7 @@ import { sendTaskCreatedEmail } from '../utils/emailjs';
 interface NewRecapModalProps {
   projects: Project[];
   history: Meeting[];
-  prefillData?: { person: string; title: string };
+  prefillData?: { person: string; title: string; notes?: string; calendarEventId?: string };
   onClose: () => void;
   onSave: (m: Meeting) => void;
 }
@@ -20,6 +20,7 @@ interface PendingSave {
   projId: string;
   result: AIResult;
   isVoice: boolean;
+  calendarEventId?: string;
 }
 
 interface TaskDraft {
@@ -38,7 +39,12 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
   const [who, setWho] = useState(prefillData?.person || '');
   const [type, setType] = useState<Meeting['type']>('1:1');
   const [projId, setProjId] = useState('');
-  const [discussions, setDiscussions] = useState(prefillData?.title ? `${prefillData.title}` : '');
+  const [discussions, setDiscussions] = useState(() => {
+    if (!prefillData) return '';
+    const parts = [prefillData.title].filter(Boolean);
+    if (prefillData.notes) parts.push(prefillData.notes);
+    return parts.join('\n\n');
+  });
   const [actionItems, setActionItems] = useState('');
   const [followups, setFollowups] = useState('');
 
@@ -75,6 +81,7 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
     tags: save.result.tags,
     isVoice: save.isVoice,
     createdAt: new Date().toISOString(),
+    calendarEventId: save.calendarEventId,
   });
 
   const doSave = (save: PendingSave, tasks: Task[] = []) => {
@@ -91,6 +98,7 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
       projId,
       result: { summary: finalRaw, decisions: [], actions: [], commitments: [], tags: [], aiSucceeded: false },
       isVoice: false,
+      calendarEventId: prefillData?.calendarEventId,
     };
   };
 
@@ -124,6 +132,7 @@ export const NewRecapModal: React.FC<NewRecapModalProps> = ({ projects, history,
       projId,
       result,
       isVoice: false,
+      calendarEventId: prefillData?.calendarEventId,
     };
 
     if (!result.aiSucceeded) {

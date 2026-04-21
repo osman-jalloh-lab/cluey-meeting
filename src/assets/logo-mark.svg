@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="cluey-grad" x1="20" y1="15" x2="80" y2="85" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E8B400"/>
+      <stop offset="50%" stop-color="#C8D400"/>
+      <stop offset="100%" stop-color="#9FD400"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer C shape: top bar, left side, bottom bar -->
+  <!-- top-right angled cut gives it the sharp corner look -->
+  <polyline
+    points="80,16 24,16 16,24 16,76 24,84 80,84"
+    stroke="url(#cluey-grad)"
+    stroke-width="6.5"
+    stroke-linecap="square"
+    stroke-linejoin="miter"
+    fill="none"
+  />
+  <!-- Middle C shape (inset) -->
+  <polyline
+    points="72,30 35,30 30,35 30,65 35,70 72,70"
+    stroke="url(#cluey-grad)"
+    stroke-width="5"
+    stroke-linecap="square"
+    stroke-linejoin="miter"
+    fill="none"
+  />
+  <!-- Inner square -->
+  <rect
+    x="42" y="42"
+    width="16" height="16"
+    stroke="url(#cluey-grad)"
+    stroke-width="4"
+    fill="none"
+  />
+</svg>

@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(() => localStorage.getItem('gcal_token'));
+  const [accessToken, setAccessToken] = useState<string | null>(() => sessionStorage.getItem('gcal_token'));
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } catch (err) {
         console.error(err);
         setAccessToken(null);
-        localStorage.removeItem('gcal_token');
+        sessionStorage.removeItem('gcal_token');
       } finally {
         setIsLoading(false);
       }
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     onSuccess: (tokenResponse) => {
       localStorage.removeItem('cluey_guest_mode');
       setAccessToken(tokenResponse.access_token);
-      localStorage.setItem('gcal_token', tokenResponse.access_token);
+      sessionStorage.setItem('gcal_token', tokenResponse.access_token);
     },
     onError: () => {
       console.error('Login failed');
@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     setAccessToken(null);
     setUser(null);
-    localStorage.removeItem('gcal_token');
+    sessionStorage.removeItem('gcal_token');
     localStorage.removeItem('cluey_guest_mode');
   };
 

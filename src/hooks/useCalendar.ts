@@ -13,10 +13,11 @@ export function useCalendar(accessToken: string | null) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const startOfDay = today.toISOString();
-      const endOfDay = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString();
+      // Fetch events for the next 7 days
+      const endTime = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const res = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(startOfDay)}&timeMax=${encodeURIComponent(endOfDay)}&singleEvents=true&orderBy=startTime`,
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(startOfDay)}&timeMax=${encodeURIComponent(endTime)}&singleEvents=true&orderBy=startTime`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -31,10 +32,10 @@ export function useCalendar(accessToken: string | null) {
         const start = item.start?.dateTime || item.start?.date;
         const end = item.end?.dateTime || item.end?.date;
         const endDate = new Date(end);
-        const status = endDate < now ? 'past' : 'upcoming';
-        
+        const status: 'past' | 'upcoming' = endDate < now ? 'past' : 'upcoming';
+
         const attendees = (item.attendees || [])
-          .filter((a: any) => !a.self && a.displayName)
+          .filter((a: any) => !a.self && (a.displayName || a.email))
           .map((a: any) => a.displayName || a.email);
 
         return {
@@ -44,6 +45,8 @@ export function useCalendar(accessToken: string | null) {
           startTime: start,
           endTime: end,
           status,
+          description: item.description || undefined,
+          location: item.location || undefined,
         };
       });
 
@@ -64,10 +67,18 @@ export function useCalendar(accessToken: string | null) {
     }
   }, [accessToken, fetchEvents]);
 
+  // Refresh when the window regains focus (e.g. user switches back from Google Calendar)
+  useEffect(() => {
+    if (!accessToken) return;
+    const handleFocus = () => fetchEvents(accessToken);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [accessToken, fetchEvents]);
+
   return {
     events,
     isLoading,
     error,
-    refreshFn: () => accessToken && fetchEvents(accessToken)
+    refreshFn: () => { if (accessToken) fetchEvents(accessToken); },
   };
 }

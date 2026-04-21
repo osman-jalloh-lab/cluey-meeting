@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import type { Meeting } from '../types';
 
-interface AIResult {
+export interface AIResult {
   summary: string;
   decisions: string[];
   actions: string[];
   commitments: string[];
   tags: string[];
+  aiSucceeded: boolean;
 }
 
 export function useAI() {
@@ -17,17 +18,11 @@ export function useAI() {
     who: string,
     projName: string,
     history: Meeting[]
-  ): Promise<AIResult | null> => {
+  ): Promise<AIResult> => {
     setIsProcessing(true);
     try {
-      const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        console.warn('No Anthropic API key found in VITE_ANTHROPIC_API_KEY. Using fallback.');
-        return fallbackResult(rawNotes);
-      }
-
-      const histContent = history.length 
-        ? `Previous meetings:\n${history.map(m => `- ${m.createdAt}: ${m.summary}`).join('\n')}` 
+      const histContent = history.length
+        ? `Previous meetings:\n${history.map(m => `- ${m.createdAt}: ${m.summary}`).join('\n')}`
         : '';
 
       const promptText = `Analyze these meeting notes. Respond ONLY with valid JSON, no markdown formatting or fences.
@@ -44,53 +39,47 @@ Structure your JSON exactly like this:
   "tags": ["topic1", "topic2"]
 }`;
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      // Always route through the serverless proxy — the API key must never be
+      // bundled into the browser. For local dev, run `netlify dev` which starts
+      // both the Vite dev server and the Netlify functions proxy on one port.
+      const res = await fetch('/api/summarize', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerously-allow-browser': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: promptText }]
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText })
       });
 
       if (!res.ok) {
-        throw new Error(`API error: ${res.statusText}`);
+        throw new Error(`API error ${res.status}: ${res.statusText}`);
       }
 
       const data = await res.json();
-      const content = data.content?.[0]?.text || '';
+      // Groq uses OpenAI response format: choices[0].message.content
+      const content = data.choices?.[0]?.message?.content || '';
       const cleanContent = content.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(cleanContent) as AIResult;
-      
+      const parsed = JSON.parse(cleanContent) as Omit<AIResult, 'aiSucceeded'>;
+
       return {
         summary: parsed.summary || rawNotes,
         decisions: parsed.decisions || [],
         actions: parsed.actions || [],
         commitments: parsed.commitments || [],
-        tags: parsed.tags || []
+        tags: parsed.tags || [],
+        aiSucceeded: true
       };
-
     } catch (err) {
-      console.error('AI summarization failed, returning raw notes', err);
-      return fallbackResult(rawNotes);
+      console.error('AI summarization failed:', err);
+      return {
+        summary: rawNotes,
+        decisions: [],
+        actions: [],
+        commitments: [],
+        tags: [],
+        aiSucceeded: false
+      };
     } finally {
       setIsProcessing(false);
     }
   };
-
-  const fallbackResult = (rawNotes: string): AIResult => ({
-    summary: rawNotes,
-    decisions: [],
-    actions: [],
-    commitments: [],
-    tags: []
-  });
 
   return { summarize, isProcessing };
 }
