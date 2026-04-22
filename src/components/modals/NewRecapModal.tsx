@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { X, Loader2, AlertTriangle, RefreshCw, Plus, UserRound, Mail, CalendarDays, ArrowLeft } from 'lucide-react';
-import type { Meeting, Project, Task } from '../types';
-import { useAI, type AIResult } from '../hooks/useAI';
-import { useAuth } from '../context/AuthContext';
-import { sendTaskCreatedEmail } from '../utils/emailjs';
+import type { Meeting, Project, Task } from '../../types';
+import { useAI, type AIResult } from '../../hooks/useAI';
+import { useAuth } from '../../context/AuthContext';
+import { sendTaskCreatedEmail } from '../../utils/emailjs';
 
 interface NewRecapModalProps {
   projects: Project[];

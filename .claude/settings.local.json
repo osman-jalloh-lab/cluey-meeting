@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx kill-port:*)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(cp \"C:\\\\Users\\\\osman\\\\.claude\\\\projects\\\\C--Users-osman-OneDrive-Desktop-cluey\\\\5a038ff8-7533-4849-9019-1ff1a313cffa\\\\tool-results\\\\webfetch-1776485706240-j3d5sw.bin\" /tmp/design.gz)",
+      "Bash(gunzip -f /tmp/design.gz)",
+      "Read(//tmp/**)",
+      "Read(//c/tmp/**)",
+      "Bash(tar xf:*)",
+      "Bash(gunzip -c C:/Users/osman/.claude/projects/C--Users-osman-OneDrive-Desktop-cluey/2bcda5ef-229e-4162-b604-9fa9ac6353cf/tool-results/webfetch-1776650487714-jrafw1.bin)",
+      "Bash(tar -xf /tmp/cluey_design.tar -C /tmp/)",
+      "Bash(npx netlify-cli:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:)"
+    ]
+  }
+}

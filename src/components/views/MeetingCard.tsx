@@ -1,8 +1,8 @@
 import React from 'react';
 import { Mic, Trash2, CheckCircle2, Clock } from 'lucide-react';
-import type { Meeting, Project } from '../types';
-import { initials } from '../utils/avatar';
-import { fmtDate } from '../utils/dates';
+import type { Meeting, Project } from '../../types';
+import { initials } from '../../utils/avatar';
+import { fmtDate } from '../../utils/dates';
 
 interface MeetingCardProps {
   meeting: Meeting;

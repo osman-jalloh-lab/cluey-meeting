@@ -1,6 +1,6 @@
 import React from 'react';
 import { MeetingCard } from './MeetingCard';
-import type { Meeting, Project } from '../types';
+import type { Meeting, Project } from '../../types';
 import { Mic } from 'lucide-react';
 
 interface MeetingFeedProps {

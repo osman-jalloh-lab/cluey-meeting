@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { X, Check, CalendarPlus, Send, Download, Pencil, Copy, CheckCheck, Clock, Bell, UserRound } from 'lucide-react';
-import type { Meeting, Project } from '../types';
-import { initials } from '../utils/avatar';
-import { fmtDate } from '../utils/dates';
-import { buildGCalUrl } from '../utils/gcal';
+import type { Meeting, Project } from '../../types';
+import { initials } from '../../utils/avatar';
+import { fmtDate } from '../../utils/dates';
+import { buildGCalUrl } from '../../utils/gcal';
 
 interface DetailPanelProps {
   meetingId: string | null;

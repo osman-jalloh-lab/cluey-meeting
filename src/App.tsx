@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sidebar } from './components/Sidebar';
-import { Toast } from './components/Toast';
-import { MeetingFeed } from './components/MeetingFeed';
-import { DetailPanel } from './components/DetailPanel';
-import { PeopleView } from './components/PeopleView';
-import { CommitmentsView } from './components/CommitmentsView';
-import { ProjectModal } from './components/ProjectModal';
-import { NewRecapModal } from './components/NewRecapModal';
-import { EditRecapModal } from './components/EditRecapModal';
-import { InviteModal } from './components/InviteModal';
-import { AskCluey } from './components/AskCluey';
-import { ReviewReminder } from './components/ReviewReminder';
+import { Sidebar } from './components/ui/Sidebar';
+import { Toast } from './components/ui/Toast';
+import { MeetingFeed } from './components/views/MeetingFeed';
+import { DetailPanel } from './components/ui/DetailPanel';
+import { PeopleView } from './components/views/PeopleView';
+import { CommitmentsView } from './components/views/CommitmentsView';
+import { ProjectModal } from './components/modals/ProjectModal';
+import { NewRecapModal } from './components/modals/NewRecapModal';
+import { EditRecapModal } from './components/modals/EditRecapModal';
+import { InviteModal } from './components/modals/InviteModal';
+import { AskParawi } from './components/ui/AskParawi';
+import { ReviewReminder } from './components/ui/ReviewReminder';
 import { useStorage } from './hooks/useStorage';
 import { useCalendar } from './hooks/useCalendar';
 import { useAuth } from './context/AuthContext';
-import { LoginPage } from './components/LoginPage';
+import { LoginPage } from './components/views/LoginPage';
 import { sendTaskDoneEmail } from './utils/emailjs';
 import { Loader2 } from 'lucide-react';
 import type { ViewType, Meeting, CalendarEvent } from './types';
@@ -37,14 +37,14 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
 
   // Dark mode — persisted
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
-    try { return (localStorage.getItem('cluey-theme') as 'light' | 'dark') || 'light'; }
+    try { return (localStorage.getItem('parawi-theme') as 'light' | 'dark') || 'light'; }
     catch { return 'light'; }
   });
 
   const setTheme = useCallback((t: 'light' | 'dark') => {
     setThemeState(t);
     document.documentElement.setAttribute('data-theme', t);
-    try { localStorage.setItem('cluey-theme', t); } catch {}
+    try { localStorage.setItem('parawi-theme', t); } catch {}
   }, []);
 
   useEffect(() => {
@@ -105,7 +105,7 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
     const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), meetings, projects }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `cluey-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.href = url; a.download = `parawi-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click(); URL.revokeObjectURL(url);
     showToast('Data exported');
   };
@@ -216,7 +216,7 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
       )}
 
       {showAsk && (
-        <AskCluey
+        <AskParawi
           meetings={meetings}
           projects={projects}
           onClose={() => setShowAsk(false)}

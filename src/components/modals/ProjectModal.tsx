@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import type { Project } from '../types';
+import type { Project } from '../../types';
 
 const PALETTE = ['#c45a3a', '#5b9cf6', '#48c490', '#a78bfa', '#e8a040', '#e0609a', '#3b82f6'];
 

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Plus, FolderPlus, Download, ChevronRight, Moon, Sun, Sparkles, RefreshCw, Check, UserPlus } from 'lucide-react';
-import type { Project, ViewType, CalendarEvent } from '../types';
-import { useAuth } from '../context/AuthContext';
-import { initials } from '../utils/avatar';
+import type { Project, ViewType, CalendarEvent } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { initials } from '../../utils/avatar';
 
 interface SidebarProps {
   view: ViewType;
@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme, setTheme,
 }) => {
   const { user, logout, login } = useAuth();
-  const isGuest = user?.email === 'guest@cluey.app';
+  const isGuest = user?.email === 'guest@parawi.app';
   const [hoveredProjId, setHoveredProjId] = useState<string | null>(null);
 
   return (
@@ -153,6 +153,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
       )}
+
+      {/* Scrollable Middle Area */}
+      <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
       {/* Nav */}
       <nav style={{ padding: '4px 10px' }}>
@@ -235,7 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <RefreshCw size={11} strokeWidth={1.8} style={{ opacity: calendarLoading ? 0.4 : 1, animation: calendarLoading ? 'spin 1s linear infinite' : 'none' }} />
         </button>
       </div>
-      <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '0 10px 10px' }}>
+      <div style={{ padding: '0 10px 10px' }}>
         {isGuest ? (
           <div style={{ padding: '6px 10px 10px' }}>
             <button
@@ -301,6 +304,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ))
         )}
+      </div>
       </div>
 
       {/* Footer */}

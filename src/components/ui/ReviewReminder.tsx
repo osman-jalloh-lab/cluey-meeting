@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bell, X, CalendarPlus } from 'lucide-react';
-import type { Project } from '../types';
-import { buildGCalUrl } from '../utils/gcal';
+import type { Project } from '../../types';
+import { buildGCalUrl } from '../../utils/gcal';
 
 interface ReviewReminderProps {
   projects: Project[];

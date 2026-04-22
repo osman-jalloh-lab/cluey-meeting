@@ -50,14 +50,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    const isGuest = localStorage.getItem('cluey_guest_mode') === 'true';
+    const isGuest = localStorage.getItem('parawi_guest_mode') === 'true';
     if (accessToken) {
       fetchProfile(accessToken);
     } else if (isGuest) {
       setUser({
         sub: 'guest-user-1',
         name: 'Guest',
-        email: 'guest@cluey.app',
+        email: 'guest@parawi.app',
         picture: `https://ui-avatars.com/api/?name=Guest&background=A3E635&color=000`
       });
       setIsLoading(false);
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = useGoogleLogin({
     scope: 'openid email profile https://www.googleapis.com/auth/calendar.readonly',
     onSuccess: (tokenResponse) => {
-      localStorage.removeItem('cluey_guest_mode');
+      localStorage.removeItem('parawi_guest_mode');
       setAccessToken(tokenResponse.access_token);
       sessionStorage.setItem('gcal_token', tokenResponse.access_token);
     },
@@ -79,11 +79,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const loginAsGuest = () => {
-    localStorage.setItem('cluey_guest_mode', 'true');
+    localStorage.setItem('parawi_guest_mode', 'true');
     setUser({
       sub: 'guest-user-1',
       name: 'Guest',
-      email: 'guest@cluey.app',
+      email: 'guest@parawi.app',
       picture: `https://ui-avatars.com/api/?name=Guest&background=A3E635&color=000`
     });
   };
@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAccessToken(null);
     setUser(null);
     sessionStorage.removeItem('gcal_token');
-    localStorage.removeItem('cluey_guest_mode');
+    localStorage.removeItem('parawi_guest_mode');
   };
 
   return (

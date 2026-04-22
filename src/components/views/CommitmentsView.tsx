@@ -1,8 +1,8 @@
 import React from 'react';
 import { Check, CalendarPlus, UserRound, Clock } from 'lucide-react';
-import type { Meeting, Task } from '../types';
-import { fmtDate } from '../utils/dates';
-import { buildGCalUrl } from '../utils/gcal';
+import type { Meeting, Task } from '../../types';
+import { fmtDate } from '../../utils/dates';
+import { buildGCalUrl } from '../../utils/gcal';
 
 interface CommitmentsViewProps {
   meetings: Meeting[];

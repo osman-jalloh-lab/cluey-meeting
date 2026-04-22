@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, ArrowRight } from 'lucide-react';
-import type { Meeting, Project } from '../types';
-import { fmtDate } from '../utils/dates';
+import type { Meeting, Project } from '../../types';
+import { fmtDate } from '../../utils/dates';
 
-interface AskClueyProps {
+interface AskParawiProps {
   meetings: Meeting[];
   projects: Project[];
   onClose: () => void;
@@ -25,7 +25,7 @@ function searchMeetings(q: string, meetings: Meeting[], projects: Project[]) {
     .slice(0, 6);
 }
 
-export const AskCluey: React.FC<AskClueyProps> = ({ meetings, projects, onClose, onOpenMeeting }) => {
+export const AskParawi: React.FC<AskParawiProps> = ({ meetings, projects, onClose, onOpenMeeting }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Meeting[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);

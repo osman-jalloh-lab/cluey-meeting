@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
-import type { Meeting, Project } from '../types';
-import { useAI } from '../hooks/useAI';
+import type { Meeting, Project } from '../../types';
+import { useAI } from '../../hooks/useAI';
 
 interface EditRecapModalProps {
   meeting: Meeting;

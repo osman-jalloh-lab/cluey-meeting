@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Meeting } from '../types';
-import { avaColor, initials } from '../utils/avatar';
+import type { Meeting } from '../../types';
+import { avaColor, initials } from '../../utils/avatar';
 
 interface PeopleViewProps {
   meetings: Meeting[];

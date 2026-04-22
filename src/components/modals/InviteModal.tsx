@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { X, Mail, UserPlus, Trash2, Send, Check, Loader2 } from 'lucide-react';
-import type { Project, ProjectMember } from '../types';
-import { useAuth } from '../context/AuthContext';
-import { sendProjectInviteEmail } from '../utils/emailjs';
+import type { Project, ProjectMember } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { sendProjectInviteEmail } from '../../utils/emailjs';
 
 interface InviteModalProps {
   project: Project;
