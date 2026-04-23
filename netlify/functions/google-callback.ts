@@ -38,10 +38,10 @@ function makeCookieOptions(maxAge: number, isProduction: boolean) {
 export const handler: Handler = async (event) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  const redirectUri = 'https://parawi.com/auth/callback';
   const isProduction = process.env.CONTEXT === 'production' || process.env.NODE_ENV === 'production';
 
-  if (!clientId || !clientSecret || !redirectUri) {
+  if (!clientId || !clientSecret) {
     console.error('[google-callback] Missing required env vars');
     return { statusCode: 503, headers: JSON_HEADERS, body: JSON.stringify({ error: 'OAuth not configured.' }) };
   }

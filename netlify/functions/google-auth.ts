@@ -15,10 +15,10 @@ const SCOPES = [
 
 export const handler: Handler = async (_event) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  const redirectUri = 'https://parawi.com/auth/callback';
 
-  if (!clientId || !redirectUri) {
-    console.error('[google-auth] Missing GOOGLE_CLIENT_ID or GOOGLE_REDIRECT_URI env var');
+  if (!clientId) {
+    console.error('[google-auth] Missing GOOGLE_CLIENT_ID env var');
     return {
       statusCode: 503,
       body: JSON.stringify({ error: 'OAuth is not configured on this server.' }),
