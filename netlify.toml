@@ -24,6 +24,26 @@
     # XSS protection for legacy browsers (A03)
     X-XSS-Protection = "1; mode=block"
 
+# ── Google OAuth routes (must be before the SPA catch-all) ──────────────────
+
+# /auth/callback → google-callback function
+[[redirects]]
+  from = "/auth/callback"
+  to = "/.netlify/functions/google-callback"
+  status = 200
+
+# /auth/login → google-auth function (convenience alias)
+[[redirects]]
+  from = "/auth/login"
+  to = "/.netlify/functions/google-auth"
+  status = 200
+
+# /auth/logout → logout function (convenience alias)
+[[redirects]]
+  from = "/auth/logout"
+  to = "/.netlify/functions/logout"
+  status = 200
+
 # Proxy /api/summarize → serverless function (must be before the SPA catch-all)
 [[redirects]]
   from = "/api/summarize"

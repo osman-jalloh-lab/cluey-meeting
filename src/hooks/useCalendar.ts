@@ -1,84 +1,87 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { CalendarEvent } from '../types';
 
-export function useCalendar(accessToken: string | null) {
+interface CreateEventPayload {
+  title: string;
+  description?: string;
+  startTime: string;  // ISO 8601
+  endTime: string;    // ISO 8601
+  attendeeEmail: string;
+}
+
+interface UseCalendarReturn {
+  events: CalendarEvent[];
+  loading: boolean;
+  error: string | null;
+  createEvent: (payload: CreateEventPayload) => Promise<CalendarEvent>;
+  refetch: () => void;
+}
+
+export function useCalendar(isAuthenticated: boolean): UseCalendarReturn {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchEvents = useCallback(async (token: string) => {
-    setIsLoading(true);
+  const fetchEvents = useCallback(async () => {
+    if (!isAuthenticated) {
+      setEvents([]);
+      return;
+    }
+    setLoading(true);
     setError(null);
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const startOfDay = today.toISOString();
-      // Fetch events for the next 7 days
-      const endTime = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-      const res = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(startOfDay)}&timeMax=${encodeURIComponent(endTime)}&singleEvents=true&orderBy=startTime`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      const res = await fetch('/.netlify/functions/calendar-events', {
+        credentials: 'include',
+      });
+      if (res.status === 401) {
+        setError('Session expired. Please sign in again.');
+        setEvents([]);
+        return;
+      }
       if (!res.ok) {
         throw new Error('Failed to fetch calendar events.');
       }
-
-      const data = await res.json();
-      const now = new Date();
-
-      const parsedEvents: CalendarEvent[] = (data.items || []).map((item: any) => {
-        const start = item.start?.dateTime || item.start?.date;
-        const end = item.end?.dateTime || item.end?.date;
-        const endDate = new Date(end);
-        const status: 'past' | 'upcoming' = endDate < now ? 'past' : 'upcoming';
-
-        const attendees = (item.attendees || [])
-          .filter((a: any) => !a.self && (a.displayName || a.email))
-          .map((a: any) => a.displayName || a.email);
-
-        return {
-          id: item.id,
-          title: item.summary || 'Untitled Event',
-          attendees,
-          startTime: start,
-          endTime: end,
-          status,
-          description: item.description || undefined,
-          location: item.location || undefined,
-        };
-      });
-
-      setEvents(parsedEvents);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Error fetching events');
+      const data = await res.json() as CalendarEvent[];
+      setEvents(data);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error fetching events';
+      console.error('[useCalendar]', msg);
+      setError(msg);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    if (accessToken) {
-      fetchEvents(accessToken);
-    } else {
-      setEvents([]);
-    }
-  }, [accessToken, fetchEvents]);
+    fetchEvents();
+  }, [fetchEvents]);
 
-  // Refresh when the window regains focus (e.g. user switches back from Google Calendar)
+  // Re-fetch when the window regains focus (user switches back from Google Calendar)
   useEffect(() => {
-    if (!accessToken) return;
-    const handleFocus = () => fetchEvents(accessToken);
+    if (!isAuthenticated) return;
+    const handleFocus = () => fetchEvents();
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [accessToken, fetchEvents]);
+  }, [isAuthenticated, fetchEvents]);
 
-  return {
-    events,
-    isLoading,
-    error,
-    refreshFn: () => { if (accessToken) fetchEvents(accessToken); },
-  };
+  const createEvent = useCallback(async (payload: CreateEventPayload): Promise<CalendarEvent> => {
+    const res = await fetch('/.netlify/functions/create-event', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({ error: 'Unknown error' })) as { error?: string };
+      throw new Error(errBody.error ?? 'Failed to create event.');
+    }
+
+    const created = await res.json() as CalendarEvent;
+    // Optimistically add to local state
+    setEvents((prev) => [...prev, created].sort((a, b) => a.startTime.localeCompare(b.startTime)));
+    return created;
+  }, []);
+
+  return { events, loading, error, createEvent, refetch: fetchEvents };
 }

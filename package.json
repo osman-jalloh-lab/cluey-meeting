@@ -11,7 +11,11 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",
+    "@types/cookie": "^0.6.0",
+    "@types/node-fetch": "^2.6.13",
+    "cookie": "^1.1.1",
     "lucide-react": "^0.395.0",
+    "node-fetch": "^3.3.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useGoogleLogin } from '@react-oauth/google';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
 export interface UserProfile {
   sub: string;
@@ -10,93 +9,84 @@ export interface UserProfile {
 
 interface AuthContextType {
   user: UserProfile | null;
-  accessToken: string | null;
   isLoading: boolean;
+  isGuest: boolean;
   login: () => void;
   loginAsGuest: () => void;
   logout: () => void;
 }
 
+const GUEST_USER: UserProfile = {
+  sub: 'guest-user-1',
+  name: 'Guest',
+  email: 'guest@parawi.app',
+  picture: `https://ui-avatars.com/api/?name=Guest&background=A3E635&color=000`,
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(() => sessionStorage.getItem('gcal_token'));
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProfile = async (token: string) => {
-      try {
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUser({
-            sub: data.sub,
-            name: data.name,
-            email: data.email,
-            picture: data.picture,
-          });
-        } else {
-          throw new Error('Failed to fetch user profile');
-        }
-      } catch (err) {
-        console.error(err);
-        setAccessToken(null);
-        sessionStorage.removeItem('gcal_token');
-      } finally {
-        setIsLoading(false);
+  const isGuest = user?.email === GUEST_USER.email;
+
+  const checkSession = useCallback(async () => {
+    // Guest mode short-circuit — stays client-side only
+    const guestMode = localStorage.getItem('parawi_guest_mode') === 'true';
+    if (guestMode) {
+      setUser(GUEST_USER);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/.netlify/functions/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json() as UserProfile;
+        setUser(data);
+      } else {
+        setUser(null);
       }
-    };
-
-    const isGuest = localStorage.getItem('parawi_guest_mode') === 'true';
-    if (accessToken) {
-      fetchProfile(accessToken);
-    } else if (isGuest) {
-      setUser({
-        sub: 'guest-user-1',
-        name: 'Guest',
-        email: 'guest@parawi.app',
-        picture: `https://ui-avatars.com/api/?name=Guest&background=A3E635&color=000`
-      });
-      setIsLoading(false);
-    } else {
+    } catch {
+      // Network error — treat as unauthenticated
+      setUser(null);
+    } finally {
       setIsLoading(false);
     }
-  }, [accessToken]);
+  }, []);
 
-  const login = useGoogleLogin({
-    scope: 'openid email profile https://www.googleapis.com/auth/calendar.readonly',
-    onSuccess: (tokenResponse) => {
-      localStorage.removeItem('parawi_guest_mode');
-      setAccessToken(tokenResponse.access_token);
-      sessionStorage.setItem('gcal_token', tokenResponse.access_token);
-    },
-    onError: () => {
-      console.error('Login failed');
-    }
-  });
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  const login = () => {
+    // Redirect to the server-side OAuth flow
+    window.location.href = '/.netlify/functions/google-auth';
+  };
 
   const loginAsGuest = () => {
     localStorage.setItem('parawi_guest_mode', 'true');
-    setUser({
-      sub: 'guest-user-1',
-      name: 'Guest',
-      email: 'guest@parawi.app',
-      picture: `https://ui-avatars.com/api/?name=Guest&background=A3E635&color=000`
-    });
+    setUser(GUEST_USER);
+    setIsLoading(false);
   };
 
-  const logout = () => {
-    setAccessToken(null);
-    setUser(null);
-    sessionStorage.removeItem('gcal_token');
+  const logout = async () => {
+    // Clear guest mode
     localStorage.removeItem('parawi_guest_mode');
+
+    // Clear server-side cookies — fire and forget
+    try {
+      await fetch('/.netlify/functions/logout', { method: 'POST', credentials: 'include' });
+    } catch {
+      // Best-effort — even if the request fails, clear local state
+    }
+
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, isLoading, login, loginAsGuest, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, isGuest, login, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );

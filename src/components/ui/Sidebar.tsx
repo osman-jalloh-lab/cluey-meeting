@@ -40,6 +40,7 @@ const NAV: Array<{ id: ViewType; label: string; icon: React.ReactNode }> = [
   { id: 'all',         label: 'Feed',        icon: <><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></> },
   { id: 'people',      label: 'People',      icon: <><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.5 0 4.5 1.5 5 4"/></> },
   { id: 'commitments', label: 'Commitments', icon: <polyline points="4,12 10,18 20,6"/> },
+  { id: 'calendar',    label: 'Calendar',    icon: <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></> },
 ];
 
 function NavSvg({ children }: { children: React.ReactNode }) {

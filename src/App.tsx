@@ -5,6 +5,7 @@ import { MeetingFeed } from './components/views/MeetingFeed';
 import { DetailPanel } from './components/ui/DetailPanel';
 import { PeopleView } from './components/views/PeopleView';
 import { CommitmentsView } from './components/views/CommitmentsView';
+import { CalendarView } from './components/views/CalendarView';
 import { ProjectModal } from './components/modals/ProjectModal';
 import { NewRecapModal } from './components/modals/NewRecapModal';
 import { EditRecapModal } from './components/modals/EditRecapModal';
@@ -19,8 +20,8 @@ import { sendTaskDoneEmail } from './utils/emailjs';
 import { Loader2 } from 'lucide-react';
 import type { ViewType, Meeting, CalendarEvent } from './types';
 
-function MainApp({ userId, accessToken }: { userId: string; accessToken: string | null }) {
-  const { user } = useAuth();
+function MainApp({ userId }: { userId: string }) {
+  const { user, isGuest } = useAuth();
   const { meetings, projects, addMeeting, updateMeeting, deleteMeeting, openTasksCount, addProject, updateProject, deleteProject } = useStorage(userId);
 
   const [view, setView] = useState<ViewType>('all');
@@ -51,7 +52,9 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  const { events: calendarEvents, isLoading: calendarLoading, refreshFn: refreshCalendar } = useCalendar(accessToken);
+  // Calendar — cookie-based auth, no accessToken needed
+  const isAuthenticated = !!user && !isGuest;
+  const { events: calendarEvents, loading: calendarLoading, refetch: refreshCalendar } = useCalendar(isAuthenticated);
 
   const recappedEventIds = React.useMemo(
     () => new Set(meetings.map(m => m.calendarEventId).filter((id): id is string => !!id)),
@@ -149,7 +152,9 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
       />
 
       <main className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', background: 'var(--paper)' }}>
-        {view === 'people' ? (
+        {view === 'calendar' ? (
+          <CalendarView />
+        ) : view === 'people' ? (
           <PeopleView meetings={filteredMeetings} onView={openMeeting} />
         ) : view === 'commitments' ? (
           <CommitmentsView meetings={filteredMeetings} onToggle={handleToggleTask} />
@@ -168,15 +173,17 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
         )}
       </main>
 
-      <DetailPanel
-        meetingId={selectedMeetingId}
-        meetings={meetings}
-        projects={projects}
-        onClose={() => setSelectedMeetingId(null)}
-        onDelete={(id) => { deleteMeeting(id); showToast('Recap deleted'); setSelectedMeetingId(null); }}
-        onEdit={(id) => setEditMeetingId(id)}
-        onToggleTask={handleToggleTask}
-      />
+      {view !== 'calendar' && (
+        <DetailPanel
+          meetingId={selectedMeetingId}
+          meetings={meetings}
+          projects={projects}
+          onClose={() => setSelectedMeetingId(null)}
+          onDelete={(id) => { deleteMeeting(id); showToast('Recap deleted'); setSelectedMeetingId(null); }}
+          onEdit={(id) => setEditMeetingId(id)}
+          onToggleTask={handleToggleTask}
+        />
+      )}
 
       {isProjModalOpen && (
         <ProjectModal
@@ -236,7 +243,7 @@ function MainApp({ userId, accessToken }: { userId: string; accessToken: string 
 }
 
 export default function App() {
-  const { user, accessToken, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -247,5 +254,5 @@ export default function App() {
   }
 
   if (!user) return <LoginPage />;
-  return <MainApp userId={user.sub} accessToken={accessToken} />;
+  return <MainApp userId={user.sub} />;
 }
