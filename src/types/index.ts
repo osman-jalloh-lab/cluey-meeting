@@ -25,6 +25,8 @@ export interface CalendarEvent {
   status: 'past' | 'upcoming';
   description?: string;
   location?: string;
+  htmlLink?: string;
+  meetLink?: string;
 }
 
 export interface Meeting {

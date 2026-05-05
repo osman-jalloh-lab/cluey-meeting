@@ -74,7 +74,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {nextMeeting ? (
               <>
-                <h2 style={{ fontSize: 28, fontWeight: 600, marginBottom: 12, lineHeight: 1.2 }}>{nextMeeting.title}</h2>
+                <h2 style={{ fontSize: 28, fontWeight: 600, marginBottom: 12, lineHeight: 1.2 }}>
+                  <a href={nextMeeting.htmlLink} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {nextMeeting.title}
+                  </a>
+                </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.8, marginBottom: 32 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Calendar size={16} /> 
@@ -85,12 +89,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span>{nextMeeting.attendees.length} people</span>
                   </div>
                 </div>
-                <button 
-                  onClick={() => onRecapEvent(nextMeeting)}
-                  style={{ background: 'var(--paper)', color: 'var(--ink)', border: 0, padding: '12px 24px', borderRadius: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  Prepare Recap <ArrowRight size={18} />
-                </button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button 
+                    onClick={() => onRecapEvent(nextMeeting)}
+                    style={{ background: 'var(--paper)', color: 'var(--ink)', border: 0, padding: '12px 24px', borderRadius: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    Prepare Recap <ArrowRight size={18} />
+                  </button>
+                  {nextMeeting.meetLink && (
+                    <a 
+                      href={nextMeeting.meetLink} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      style={{ background: '#4285F4', color: 'white', textDecoration: 'none', padding: '12px 24px', borderRadius: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      Join Meet <ExternalLink size={18} />
+                    </a>
+                  )}
+                </div>
               </>
             ) : (
               <div style={{ padding: '20px 0' }}>

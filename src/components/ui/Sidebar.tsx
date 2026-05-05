@@ -280,7 +280,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, color: isRecapped ? 'var(--ink-4)' : 'var(--ink-2)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: ev.status === 'past' && !isRecapped ? 'line-through' : 'none' }}>
-                        {ev.title}
+                        <a href={ev.htmlLink} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                          {ev.title}
+                        </a>
                       </div>
                       {ev.status === 'upcoming' && ev.attendees.length > 0 && (
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', marginTop: 2 }}>

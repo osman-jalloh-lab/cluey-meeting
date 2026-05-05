@@ -32,6 +32,8 @@ interface GoogleCalendarEvent {
   end: GoogleCalendarEventDateTime;
   attendees?: GoogleCalendarAttendee[];
   status?: string;
+  htmlLink?: string;
+  hangoutLink?: string;
 }
 
 interface GoogleCalendarListResponse {
@@ -106,6 +108,8 @@ export const handler: Handler = async (event) => {
         endTime: endRaw,
         attendees,
         status,
+        htmlLink: item.htmlLink,
+        meetLink: item.hangoutLink,
       };
     });
 
