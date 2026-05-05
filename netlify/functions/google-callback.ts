@@ -95,7 +95,7 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 302,
       headers: {
-        Location: '/',
+        Location: '/?auth_success=' + Date.now(),
         'Cache-Control': 'no-store',
       },
       multiValueHeaders: {

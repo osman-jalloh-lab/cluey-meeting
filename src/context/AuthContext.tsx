@@ -61,6 +61,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [checkSession]);
 
   const login = () => {
+    // Clear guest mode first so we don't accidentally return to guest state
+    localStorage.removeItem('parawi_guest_mode');
     // Redirect to the server-side OAuth flow
     window.location.href = '/.netlify/functions/google-auth';
   };
