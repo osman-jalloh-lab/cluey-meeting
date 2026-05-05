@@ -284,11 +284,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           {ev.title}
                         </a>
                       </div>
-                      {ev.status === 'upcoming' && ev.attendees.length > 0 && (
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', marginTop: 2 }}>
-                          {ev.attendees.slice(0, 2).join(', ')}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2 }}>
+                        {ev.status === 'upcoming' && ev.attendees.length > 0 && (
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)' }}>
+                            {ev.attendees.length} people
+                          </div>
+                        )}
+                        <span style={{ fontSize: 9, background: 'var(--paper-3)', padding: '1px 4px', borderRadius: 3, color: 'var(--ink-4)' }}>
+                          {(ev as any).accountEmail}
+                        </span>
+                      </div>
                     </div>
                     {isRecapped ? (
                       <span title="Recapped" style={{ display: 'grid', placeItems: 'center', width: 18, height: 18, borderRadius: '50%', background: 'var(--accent-soft)', flexShrink: 0 }}>

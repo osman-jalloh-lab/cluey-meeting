@@ -56,6 +56,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </h1>
           <p style={{ color: 'var(--ink-3)', fontSize: 16 }}>Here's what's happening across your workspace today.</p>
         </div>
+        <button 
+          onClick={() => window.location.href = '/.netlify/functions/google-auth?prompt=select_account'}
+          style={{ marginLeft: 'auto', background: 'var(--paper-2)', border: '1px solid var(--line)', padding: '10px 16px', borderRadius: 12, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+        >
+          <Plus size={18} /> Add Account
+        </button>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 24 }}>
@@ -175,7 +181,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>{new Date(msg.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                       </div>
                       <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--ink-2)', marginBottom: 2 }}>{msg.subject}</div>
-                      <p style={{ fontSize: 12, color: 'var(--ink-4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{msg.snippet}</p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <p style={{ fontSize: 12, color: 'var(--ink-4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{msg.snippet}</p>
+                        <span style={{ fontSize: 10, background: 'var(--paper-3)', padding: '2px 6px', borderRadius: 4, color: 'var(--ink-4)', marginLeft: 8 }}>
+                          {(msg as any).accountEmail}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}

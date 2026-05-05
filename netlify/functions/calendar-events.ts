@@ -1,125 +1,104 @@
 /**
  * calendar-events.ts
- * Fetches the next 20 upcoming events from the user's primary Google Calendar.
- * Reads the access token from the HttpOnly cookie.
+ * Aggregates upcoming calendar events from ALL linked Google accounts.
  */
 
 import type { Handler } from '@netlify/functions';
 import fetch from 'node-fetch';
 import { parse } from 'cookie';
+import { query } from './utils/db';
+import { getValidAccessToken } from './utils/google-refresh';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-interface GoogleCalendarEventDateTime {
-  dateTime?: string;
-  date?: string;
-  timeZone?: string;
-}
-
-interface GoogleCalendarAttendee {
-  email: string;
-  displayName?: string;
-  self?: boolean;
-  responseStatus?: string;
-}
-
-interface GoogleCalendarEvent {
-  id: string;
-  summary?: string;
-  description?: string;
-  location?: string;
-  start: GoogleCalendarEventDateTime;
-  end: GoogleCalendarEventDateTime;
-  attendees?: GoogleCalendarAttendee[];
-  status?: string;
-  htmlLink?: string;
-  hangoutLink?: string;
-}
-
-interface GoogleCalendarListResponse {
-  items?: GoogleCalendarEvent[];
-  error?: {
-    code: number;
-    message: string;
-    status: string;
-  };
-}
-
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers: JSON_HEADERS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
-  }
-
   const cookieHeader = event.headers['cookie'] ?? event.headers['Cookie'] ?? '';
   const cookies = parse(cookieHeader);
-  const accessToken = cookies['parawi_access_token'];
+  const userId = cookies['parawi_user_id'];
 
-  if (!accessToken) {
+  if (!userId) {
     return { statusCode: 401, headers: JSON_HEADERS, body: JSON.stringify({ error: 'Not authenticated.' }) };
   }
 
   try {
-    const now = new Date();
-    now.setSeconds(0, 0);
-    const timeMin = now.toISOString();
-    // Fetch events for the next 30 days
-    const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-    const params = new URLSearchParams({
-      timeMin,
-      timeMax,
-      singleEvents: 'true',
-      orderBy: 'startTime',
-      maxResults: '20',
-    });
-
-    const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
+    const accountsRes = await query(
+      'SELECT id, email, access_token, refresh_token, expires_at FROM google_accounts WHERE user_id = $1',
+      [userId]
     );
 
-    const data = await res.json() as GoogleCalendarListResponse;
-
-    if (!res.ok) {
-      console.error('[calendar-events] Google API error:', res.status, data.error?.message);
-      if (res.status === 401) {
-        return { statusCode: 401, headers: JSON_HEADERS, body: JSON.stringify({ error: 'Token expired. Please log in again.' }) };
-      }
-      return { statusCode: 502, headers: JSON_HEADERS, body: JSON.stringify({ error: 'Failed to fetch calendar events.' }) };
+    if (accountsRes.rowCount === 0) {
+      return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify([]) };
     }
 
-    const nowDate = new Date();
-    const events = (data.items ?? []).map((item) => {
-      const startRaw = item.start?.dateTime ?? item.start?.date ?? '';
-      const endRaw = item.end?.dateTime ?? item.end?.date ?? '';
-      const endDate = new Date(endRaw);
-      const status: 'past' | 'upcoming' = endDate < nowDate ? 'past' : 'upcoming';
+    const allEventsPromises = accountsRes.rows.map(async (acc) => {
+      try {
+        const token = await getValidAccessToken(acc.id, acc.access_token, acc.refresh_token, acc.expires_at);
+        
+        const now = new Date();
+        now.setSeconds(0, 0);
+        const timeMin = now.toISOString();
+        const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      const attendees = (item.attendees ?? [])
-        .filter((a) => !a.self && (a.displayName || a.email))
-        .map((a) => a.displayName ?? a.email);
+        const params = new URLSearchParams({
+          timeMin,
+          timeMax,
+          singleEvents: 'true',
+          orderBy: 'startTime',
+          maxResults: '20',
+        });
 
-      return {
-        id: item.id,
-        title: item.summary ?? 'Untitled Event',
-        description: item.description ?? undefined,
-        location: item.location ?? undefined,
-        startTime: startRaw,
-        endTime: endRaw,
-        attendees,
-        status,
-        htmlLink: item.htmlLink,
-        meetLink: item.hangoutLink,
-      };
+        const res = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const data = await res.json() as any;
+        if (!res.ok) return [];
+
+        const nowDate = new Date();
+        return (data.items ?? []).map((item: any) => {
+          const startRaw = item.start?.dateTime ?? item.start?.date ?? '';
+          const endRaw = item.end?.dateTime ?? item.end?.date ?? '';
+          const endDate = new Date(endRaw);
+          const status = endDate < nowDate ? 'past' : 'upcoming';
+
+          const attendees = (item.attendees ?? [])
+            .filter((a: any) => !a.self && (a.displayName || a.email))
+            .map((a: any) => a.displayName ?? a.email);
+
+          return {
+            id: item.id,
+            title: item.summary ?? 'Untitled Event',
+            description: item.description ?? undefined,
+            location: item.location ?? undefined,
+            startTime: startRaw,
+            endTime: endRaw,
+            attendees,
+            status,
+            htmlLink: item.htmlLink,
+            meetLink: item.hangoutLink,
+            accountEmail: acc.email
+          };
+        });
+      } catch (err) {
+        console.error(`[calendar-events] Error for ${acc.email}:`, err);
+        return [];
+      }
     });
+
+    const results = await Promise.all(allEventsPromises);
+    const flattened = results.flat();
+
+    // Sort by start time ascending
+    const sorted = flattened.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     return {
       statusCode: 200,
       headers: JSON_HEADERS,
-      body: JSON.stringify(events),
+      body: JSON.stringify(sorted),
     };
   } catch (err) {
-    console.error('[calendar-events] Unexpected error:', err);
-    return { statusCode: 502, headers: JSON_HEADERS, body: JSON.stringify({ error: 'Failed to reach Google Calendar API.' }) };
+    console.error('[calendar-events] Aggregation error:', err);
+    return { statusCode: 500, headers: JSON_HEADERS, body: JSON.stringify({ error: 'Failed to aggregate calendar.' }) };
   }
 };

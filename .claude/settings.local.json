@@ -16,7 +16,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "WebFetch(domain:)"
+      "WebFetch(domain:)",
+      "WebFetch(domain:api.netlify.com)",
+      "Bash(find . -not -path */node_modules/* -not -path */.git/* -not -path */.netlify/* -not -path */dist/* -type f)"
     ]
   }
 }
