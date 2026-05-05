@@ -38,8 +38,10 @@ function makeCookieOptions(maxAge: number, isProduction: boolean) {
 export const handler: Handler = async (event) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = 'https://parawi.com/auth/callback';
   const isProduction = process.env.CONTEXT === 'production' || process.env.NODE_ENV === 'production';
+  const redirectUri = isProduction
+    ? 'https://parawi.com/auth/callback'
+    : 'http://localhost:8888/auth/callback';
 
   if (!clientId || !clientSecret) {
     console.error('[google-callback] Missing required env vars');
