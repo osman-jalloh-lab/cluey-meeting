@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, FolderPlus, Download, ChevronRight, Moon, Sun, Sparkles, RefreshCw, Check, UserPlus } from 'lucide-react';
+import { Home, Plus, FolderPlus, Download, ChevronRight, Moon, Sun, Sparkles, RefreshCw, Check, UserPlus } from 'lucide-react';
 import type { Project, ViewType, CalendarEvent } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { initials } from '../../utils/avatar';
@@ -37,6 +37,7 @@ function LogoIcon() {
 }
 
 const NAV: Array<{ id: ViewType; label: string; icon: React.ReactNode }> = [
+  { id: 'dashboard',   label: 'Home',        icon: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></> },
   { id: 'all',         label: 'Feed',        icon: <><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></> },
   { id: 'people',      label: 'People',      icon: <><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.5 0 4.5 1.5 5 4"/></> },
   { id: 'commitments', label: 'Commitments', icon: <polyline points="4,12 10,18 20,6"/> },

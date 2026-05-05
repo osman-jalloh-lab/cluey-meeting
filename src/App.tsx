@@ -6,6 +6,7 @@ import { DetailPanel } from './components/ui/DetailPanel';
 import { PeopleView } from './components/views/PeopleView';
 import { CommitmentsView } from './components/views/CommitmentsView';
 import { CalendarView } from './components/views/CalendarView';
+import { DashboardView } from './components/views/DashboardView';
 import { ProjectModal } from './components/modals/ProjectModal';
 import { NewRecapModal } from './components/modals/NewRecapModal';
 import { EditRecapModal } from './components/modals/EditRecapModal';
@@ -24,7 +25,7 @@ function MainApp({ userId }: { userId: string }) {
   const { user, isGuest } = useAuth();
   const { meetings, projects, addMeeting, updateMeeting, deleteMeeting, openTasksCount, addProject, updateProject, deleteProject } = useStorage(userId);
 
-  const [view, setView] = useState<ViewType>('all');
+  const [view, setView] = useState<ViewType>('dashboard');
   const [selectedProjId, setSelectedProjId] = useState<string | null>(null);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
@@ -158,6 +159,23 @@ function MainApp({ userId }: { userId: string }) {
           <PeopleView meetings={filteredMeetings} onView={openMeeting} />
         ) : view === 'commitments' ? (
           <CommitmentsView meetings={filteredMeetings} onToggle={handleToggleTask} />
+        ) : view === 'dashboard' ? (
+          <DashboardView 
+            meetings={meetings}
+            projects={projects}
+            calendarEvents={calendarEvents}
+            calendarLoading={calendarLoading}
+            onViewMeeting={openMeeting}
+            onRecapEvent={(e) => {
+              setNewRecapPrefill({
+                person: e.attendees.join(', ') || 'Someone',
+                title: e.title,
+                notes: e.description,
+                calendarEventId: e.id,
+              });
+              setIsNewRecapOpen(true);
+            }}
+          />
         ) : (
           <MeetingFeed
             meetings={filteredMeetings}

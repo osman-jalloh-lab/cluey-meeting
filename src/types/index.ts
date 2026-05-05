@@ -60,4 +60,4 @@ export interface Project {
   members?: ProjectMember[];
 }
 
-export type ViewType = 'all' | 'people' | 'commitments' | 'project' | 'calendar';
+export type ViewType = 'dashboard' | 'all' | 'people' | 'commitments' | 'project' | 'calendar';
