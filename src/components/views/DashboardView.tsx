@@ -1,8 +1,8 @@
 import React from 'react';
 import { Calendar, Mail, CheckCircle2, ArrowRight, ExternalLink, Sparkles, Clock, User } from 'lucide-react';
-import type { Meeting, Project, CalendarEvent } from '../types';
-import { useAuth } from '../context/AuthContext';
-import { useGmail } from '../hooks/useGmail';
+import type { Meeting, Project, CalendarEvent } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { useGmail } from '../../hooks/useGmail';
 
 interface DashboardViewProps {
   meetings: Meeting[];
