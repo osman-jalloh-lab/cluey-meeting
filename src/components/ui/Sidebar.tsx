@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Plus, FolderPlus, Download, ChevronRight, Moon, Sun, Sparkles, RefreshCw, Check, UserPlus } from 'lucide-react';
+import { Home, Plus, FolderPlus, Download, ChevronRight, Moon, Sun, Sparkles, RefreshCw, Check, UserPlus, X } from 'lucide-react';
 import type { Project, ViewType, CalendarEvent } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { initials } from '../../utils/avatar';
@@ -24,6 +24,9 @@ interface SidebarProps {
   onExport: () => void;
   theme: 'light' | 'dark';
   setTheme: (t: 'light' | 'dark') => void;
+  isMobile: boolean;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 function LogoIcon() {
@@ -91,18 +94,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   view, setView, projects, selectedProjId, setSelectedProjId,
   openCommitmentsCount, totalMeetingsCount, onNewRecap, onAddProject, onInviteProject, onAsk,
   calendarEvents, calendarLoading, onRecapEvent, onRefreshCalendar, recappedEventIds, onExport,
-  theme, setTheme,
+  theme, setTheme, isMobile, isOpen, onClose,
 }) => {
   const { user, logout, login } = useAuth();
   const isGuest = user?.email === 'guest@parawi.app';
   const [hoveredProjId, setHoveredProjId] = useState<string | null>(null);
 
   return (
-    <aside style={{
-      width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column',
-      borderRight: '1px solid var(--line)', background: 'var(--paper-2)',
-      height: '100%', overflow: 'hidden',
-    }}>
+    <aside
+      className={isMobile ? `sidebar-mobile ${isOpen ? 'sidebar-mobile-open' : 'sidebar-mobile-closed'}` : ''}
+      style={{
+        width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column',
+        borderRight: '1px solid var(--line)', background: 'var(--paper-2)',
+        height: '100%', overflow: 'hidden',
+      }}>
       {/* Wordmark */}
       <div style={{ padding: '20px 18px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--ink)', color: 'var(--paper)', display: 'grid', placeItems: 'center' }}>
@@ -119,6 +124,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           {theme === 'dark' ? <Sun size={14} strokeWidth={1.6} /> : <Moon size={14} strokeWidth={1.6} />}
         </button>
+        {isMobile && (
+          <button
+            onClick={onClose}
+            aria-label="Close menu"
+            style={{ background: 'transparent', border: '1px solid var(--line)', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}
+          >
+            <X size={14} strokeWidth={1.8} />
+          </button>
+        )}
       </div>
 
       {/* New recap */}

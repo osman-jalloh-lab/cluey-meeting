@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Mail, CheckCircle2, ArrowRight, ExternalLink, Sparkles, Clock, User } from 'lucide-react';
+import { Calendar, Mail, CheckCircle2, ArrowRight, ExternalLink, Sparkles, Clock, User, Plus, AlertTriangle, ShieldAlert } from 'lucide-react';
 import type { Meeting, Project, CalendarEvent } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useGmail } from '../../hooks/useGmail';
@@ -176,9 +176,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <User size={20} style={{ color: 'var(--ink-3)' }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, alignItems: 'center' }}>
                         <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)' }}>{msg.from.split('<')[0]}</span>
-                        <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>{new Date(msg.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          {msg.urgency === 'urgent' && (
+                            <span style={{ fontSize: 10, background: 'var(--error-soft)', color: 'var(--error)', padding: '2px 8px', borderRadius: 100, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <AlertTriangle size={10} /> URGENT
+                            </span>
+                          )}
+                          {msg.urgency === 'important' && (
+                            <span style={{ fontSize: 10, background: 'var(--warning-soft)', color: 'var(--warning)', padding: '2px 8px', borderRadius: 100, fontWeight: 600 }}>
+                              IMPORTANT
+                            </span>
+                          )}
+                          <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>{new Date(msg.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                        </div>
                       </div>
                       <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--ink-2)', marginBottom: 2 }}>{msg.subject}</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

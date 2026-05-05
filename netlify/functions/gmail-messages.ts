@@ -1,6 +1,6 @@
 /**
  * gmail-messages.ts
- * Aggregates recent emails from ALL linked Google accounts for the current user.
+ * Aggregates recent emails from ALL linked Google accounts and categorizes them by urgency using Groq AI.
  */
 
 import type { Handler } from '@netlify/functions';
@@ -10,6 +10,46 @@ import { query } from './utils/db';
 import { getValidAccessToken } from './utils/google-refresh';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+async function getUrgency(subject: string, snippet: string): Promise<'urgent' | 'important' | 'normal'> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return 'normal';
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          {
+            role: 'system',
+            content: 'Categorize the following email based on subject and snippet into one of these: urgent, important, normal. Reply ONLY with the word.'
+          },
+          {
+            role: 'user',
+            content: `Subject: ${subject}\nSnippet: ${snippet}`
+          }
+        ],
+        temperature: 0,
+        max_tokens: 10
+      })
+    });
+
+    const data = await res.json() as any;
+    const category = data.choices?.[0]?.message?.content?.toLowerCase().trim() || 'normal';
+    
+    if (category.includes('urgent')) return 'urgent';
+    if (category.includes('important')) return 'important';
+    return 'normal';
+  } catch (err) {
+    console.error('[urgency-ai] Error:', err);
+    return 'normal';
+  }
+}
 
 export const handler: Handler = async (event) => {
   const cookieHeader = event.headers['cookie'] ?? event.headers['Cookie'] ?? '';
@@ -21,7 +61,6 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // 1. Fetch all linked accounts
     const accountsRes = await query(
       'SELECT id, email, access_token, refresh_token, expires_at FROM google_accounts WHERE user_id = $1',
       [userId]
@@ -31,7 +70,6 @@ export const handler: Handler = async (event) => {
       return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify([]) };
     }
 
-    // 2. Fetch messages from each account in parallel
     const allMessagesPromises = accountsRes.rows.map(async (acc) => {
       try {
         const token = await getValidAccessToken(acc.id, acc.access_token, acc.refresh_token, acc.expires_at);
@@ -54,14 +92,18 @@ export const handler: Handler = async (event) => {
           const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown';
           const date = headers.find((h: any) => h.name === 'Date')?.value || new Date().toISOString();
 
+          // Get urgency classification
+          const urgency = await getUrgency(subject, mdata.snippet);
+
           return {
             id: mdata.id,
             threadId: mdata.threadId,
             snippet: mdata.snippet,
             from,
             subject,
+            urgency,
             date: new Date(date).toISOString(),
-            accountEmail: acc.email // Tag the email so we know which account it's from
+            accountEmail: acc.email
           };
         });
 
@@ -75,7 +117,6 @@ export const handler: Handler = async (event) => {
     const results = await Promise.all(allMessagesPromises);
     const flattened = results.flat();
 
-    // 3. Sort by date descending
     const sorted = flattened.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return {

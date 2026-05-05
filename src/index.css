@@ -69,6 +69,13 @@
   html { height: 100%; margin: 0; }
   body { height: 100%; margin: 0; overflow: hidden; }
   #root { height: 100%; }
+
+  /* Use dynamic viewport height on mobile to handle browser chrome (iOS/Android) */
+  @supports (height: 100dvh) {
+    @media (max-width: 768px) {
+      html, body, #root { height: 100dvh; }
+    }
+  }
   body {
     font-family: var(--font-ui);
     font-size: 14px;
@@ -200,3 +207,27 @@
   -webkit-background-clip: text; background-clip: text; color: transparent;
   animation: shimmer 2.2s linear infinite;
 }
+
+/* Safe area insets for iPhone notch / home indicator */
+.pb-safe { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.pt-safe { padding-top: max(0px, env(safe-area-inset-top)); }
+
+/* Mobile sidebar overlay backdrop */
+.mobile-backdrop {
+  position: fixed; inset: 0;
+  background: color-mix(in oklch, var(--ink) 40%, transparent);
+  backdrop-filter: blur(2px);
+  z-index: 49;
+  animation: overlayIn .2s ease;
+}
+
+/* Sidebar slide-in on mobile */
+.sidebar-mobile {
+  position: fixed !important;
+  top: 0; left: 0; bottom: 0;
+  z-index: 50;
+  box-shadow: var(--shadow-pop);
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
+.sidebar-mobile-closed { transform: translateX(-100%); }
+.sidebar-mobile-open  { transform: translateX(0); }

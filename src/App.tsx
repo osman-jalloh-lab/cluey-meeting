@@ -16,14 +16,16 @@ import { ReviewReminder } from './components/ui/ReviewReminder';
 import { useStorage } from './hooks/useStorage';
 import { useCalendar } from './hooks/useCalendar';
 import { useAuth } from './context/AuthContext';
+import { useIsMobile } from './hooks/useIsMobile';
 import { LoginPage } from './components/views/LoginPage';
 import { sendTaskDoneEmail } from './utils/emailjs';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
 import type { ViewType, Meeting, CalendarEvent } from './types';
 
 function MainApp({ userId }: { userId: string }) {
   const { user, isGuest } = useAuth();
   const { meetings, projects, addMeeting, updateMeeting, deleteMeeting, openTasksCount, addProject, updateProject, deleteProject } = useStorage(userId);
+  const isMobile = useIsMobile();
 
   const [view, setView] = useState<ViewType>('dashboard');
   const [selectedProjId, setSelectedProjId] = useState<string | null>(null);
@@ -36,6 +38,7 @@ function MainApp({ userId }: { userId: string }) {
   const [showAsk, setShowAsk] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [dismissedReminders, setDismissedReminders] = useState<Set<string>>(new Set());
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Dark mode — persisted
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
@@ -122,18 +125,23 @@ function MainApp({ userId }: { userId: string }) {
 
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: 'var(--paper)' }}>
+      {/* Mobile backdrop — closes sidebar when tapping outside */}
+      {isMobile && mobileSidebarOpen && (
+        <div className="mobile-backdrop" onClick={() => setMobileSidebarOpen(false)} />
+      )}
+
       <Sidebar
         view={view}
-        setView={(v) => { setView(v); setSelectedMeetingId(null); }}
+        setView={(v) => { setView(v); setSelectedMeetingId(null); if (isMobile) setMobileSidebarOpen(false); }}
         projects={projects}
         selectedProjId={selectedProjId}
         setSelectedProjId={setSelectedProjId}
         openCommitmentsCount={openTasksCount}
         totalMeetingsCount={meetings.length}
-        onNewRecap={() => { setNewRecapPrefill(undefined); setIsNewRecapOpen(true); }}
+        onNewRecap={() => { setNewRecapPrefill(undefined); setIsNewRecapOpen(true); if (isMobile) setMobileSidebarOpen(false); }}
         onAddProject={() => setIsProjModalOpen(true)}
         onInviteProject={(id) => setInviteProjectId(id)}
-        onAsk={() => setShowAsk(true)}
+        onAsk={() => { setShowAsk(true); if (isMobile) setMobileSidebarOpen(false); }}
         calendarEvents={calendarEvents}
         calendarLoading={calendarLoading}
         onRecapEvent={(e: CalendarEvent) => {
@@ -144,15 +152,32 @@ function MainApp({ userId }: { userId: string }) {
             calendarEventId: e.id,
           });
           setIsNewRecapOpen(true);
+          if (isMobile) setMobileSidebarOpen(false);
         }}
         onRefreshCalendar={refreshCalendar}
         recappedEventIds={recappedEventIds}
         onExport={handleExport}
         theme={theme}
         setTheme={setTheme}
+        isMobile={isMobile}
+        isOpen={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
       />
 
-      <main className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', background: 'var(--paper)' }}>
+      <main className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', background: 'var(--paper)', minWidth: 0 }}>
+        {/* Mobile top bar with hamburger */}
+        {isMobile && (
+          <div style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--paper)', borderBottom: '1px solid var(--line)' }}>
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open menu"
+              style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--line)', background: 'transparent', cursor: 'pointer', color: 'var(--ink-2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}
+            >
+              <Menu size={18} strokeWidth={1.8} />
+            </button>
+            <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 18, color: 'var(--ink)', letterSpacing: '-0.4px' }}>parawi</span>
+          </div>
+        )}
         {view === 'calendar' ? (
           <CalendarView />
         ) : view === 'people' ? (
