@@ -219,27 +219,47 @@ model AgentMessage {
 }
 
 model JobLead {
-  id                    String   @id @default(cuid())
+  id                    String    @id @default(cuid())
   userId                String
   title                 String
   company               String
   location              String?
   source                String?
   jobUrl                String?
-  matchScore            Int      @default(0)
+  // Scoring — 1-5 scale (1=skip, 3=review, 5=apply now)
+  matchScore            Int       @default(0)
+  scoreBreakdown        String?   // JSON: { skills, experience, level, location, workType, growth, effort }
   matchReason           String?
+  recommendation        String?   // "Apply now" | "Apply after edits" | "Review gaps" | "Probably skip" | "Skip"
+  // Skills analysis
   requiredSkills        String?
   matchedSkills         String?
   missingSkills         String?
+  resumeKeywords        String?   // ATS keywords to include from this JD
+  resumeAngle           String?   // Suggested resume framing for this role
+  // Work auth
   workAuthNotes         String?
-  status                String   @default("Found")
+  sponsorshipRequired   Boolean   @default(false)
+  clearanceRequired     Boolean   @default(false)
+  // Status pipeline
+  // Found → Evaluated → Applying → Applied → Screening → Interview → Offer → Rejected → Accepted → Skipped
+  status                String    @default("Found")
   resumeVersion         String?
   coverLetterVersion    String?
-  createdBy             String   @default("Career Advisor Agent")
-  requiresApproval      Boolean  @default(true)
+  createdBy             String    @default("Career Advisor Agent")
+  requiresApproval      Boolean   @default(true)
   nextAction            String?
+  notes                 String?
+  // Timeline
   deadline              DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appliedAt             DateTime?
+  followUpDate          DateTime?
+  followUpCount         Int       @default(0)
+  interviewDate         DateTime?
+  // Interview/research
+  interviewPrep         String?   // AI-generated prep notes
+  companyResearch       String?   // AI-generated company notes
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
