@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { getAccountColor } from '@/lib/utils'
 
 interface Account {
@@ -32,7 +33,8 @@ function ScopeBadge({ granted, label }: { granted: boolean; label: string }) {
   )
 }
 
-export default function AccountsPage() {
+function AccountsContent() {
+  const searchParams = useSearchParams()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null) // accountId or 'new'
@@ -41,12 +43,11 @@ export default function AccountsPage() {
   const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('success') === 'connected') setSuccess('Account connected. You now have Gmail + Calendar access.')
-    if (params.get('success') === 'reconnected') setSuccess('Account reconnected. Calendar access has been granted.')
-    if (params.get('error')) setError(`Connection failed: ${params.get('error')}`)
+    if (searchParams.get('success') === 'connected') setSuccess('Account connected. You now have Gmail + Calendar access.')
+    if (searchParams.get('success') === 'reconnected') setSuccess('Account reconnected. Calendar access has been granted.')
+    if (searchParams.get('error')) setError(`Connection failed: ${searchParams.get('error')}`)
     loadAccounts()
-  }, [])
+  }, [searchParams])
 
   const loadAccounts = async () => {
     try {
@@ -269,5 +270,13 @@ export default function AccountsPage() {
         </ol>
       </div>
     </div>
+  )
+}
+
+export default function AccountsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '24px', color: 'var(--fg-muted)', font: '400 13px/1 var(--font-sans)' }}>Loading…</div>}>
+      <AccountsContent />
+    </Suspense>
   )
 }

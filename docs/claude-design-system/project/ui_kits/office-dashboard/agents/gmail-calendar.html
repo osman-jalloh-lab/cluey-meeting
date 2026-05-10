@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gmail &amp; Calendar Agent — Pixel Agents</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../../colors_and_type.css">
+<style>
+  body { padding: 24px 28px 60px; max-width: 1200px; margin: 0 auto; }
+
+  /* badges */
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px 3px 7px; border-radius: var(--r-pill); font: 600 10px/1.4 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; }
+  .badge::before { content: ""; width: 5px; height: 5px; border-radius: 50%; }
+  .badge-online    { background: rgba(34,197,94,0.14);  color: #4ADE80; }
+  .badge-online::before    { background: #22C55E; box-shadow: 0 0 6px #22C55E; }
+  .badge-approval  { background: rgba(139,92,246,0.18); color: #C4B5FD; }
+  .badge-approval::before  { background: #8B5CF6; box-shadow: 0 0 6px #8B5CF6; }
+  .badge-review    { background: rgba(245,158,11,0.16); color: #FBBF24; }
+  .badge-review::before    { background: #F59E0B; box-shadow: 0 0 6px #F59E0B; }
+  .badge-error     { background: rgba(239,68,68,0.16);  color: #F87171; }
+  .badge-error::before     { background: #EF4444; box-shadow: 0 0 6px #EF4444; }
+  .badge-completed { background: rgba(59,130,246,0.14); color: #60A5FA; }
+  .badge-completed::before { background: #3B82F6; }
+  .badge-idle      { background: rgba(134,147,176,0.12); color: #B7C0D6; }
+  .badge-idle::before      { background: #8693B0; }
+
+  /* nav */
+  .crumbs { display: flex; align-items: center; gap: 8px; font: 500 12px/1 var(--font-sans); color: var(--fg-muted); margin-bottom: 18px; }
+  .crumbs a { color: var(--c-blue-2); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .crumbs a:hover { color: #93C5FD; }
+  .crumbs .sep { color: var(--fg-disabled); }
+
+  /* header */
+  .hero { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; padding: 22px 24px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r-7); position: relative; overflow: hidden; margin-bottom: 16px; }
+  .hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, rgba(139,92,246,0.12), transparent 50%, rgba(59,130,246,0.10)); pointer-events: none; }
+  .hero > * { position: relative; }
+  .hero-l { display: flex; align-items: center; gap: 18px; }
+  .hero-avatar { width: 60px; height: 60px; border-radius: var(--r-4); background: linear-gradient(160deg,#A78BFA,#3B82F6); display: grid; place-items: center; font: 700 14px/1 var(--font-pixel); color: #fff; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.30), var(--sh-2); flex-shrink: 0; letter-spacing: 0.05em; }
+  .hero-meta h1 { margin: 0 0 4px; font: 600 24px/1.1 var(--font-sans); letter-spacing: -0.01em; color: var(--fg-primary); }
+  .hero-meta .sub { font: 500 13px/1.4 var(--font-sans); color: var(--fg-secondary); margin-bottom: 8px; }
+  .hero-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .tag { padding: 3px 8px; border-radius: var(--r-pill); font: 600 10px/1.4 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; background: var(--bg-surface-2); color: var(--fg-secondary); border: 1px solid var(--border-default); }
+  .hero-r { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .cost-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--r-pill); background: rgba(34,197,94,0.10); color: #4ADE80; font: 600 11px/1 var(--font-sans); border: 1px solid rgba(34,197,94,0.25); }
+  .cost-pill .price { font: 700 11px/1 var(--font-mono); }
+  .last-sync { font: 500 11px/1.4 var(--font-mono); color: var(--fg-muted); }
+  .last-sync .pulse { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--c-success); margin-right: 6px; box-shadow: 0 0 6px var(--c-success); animation: pulse 2.4s ease-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  /* manual actions card (the centerpiece) */
+  .actions-card { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r-5); padding: 20px; margin-bottom: 16px; }
+  .actions-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+  .actions-head h2 { margin: 0 0 4px; font: 600 16px/1.2 var(--font-sans); color: var(--fg-primary); }
+  .actions-head .h-sub { font: 500 12px/1.4 var(--font-sans); color: var(--fg-muted); max-width: 540px; }
+  .actions-head .h-sub .em { color: #FBBF24; font-weight: 600; }
+  .info-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: var(--r-pill); font: 600 10px/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; background: rgba(245,158,11,0.10); color: #FBBF24; border: 1px solid rgba(245,158,11,0.25); flex-shrink: 0; }
+  .actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .act { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: var(--bg-rail); border: 1px solid var(--border-subtle); border-radius: var(--r-4); cursor: pointer; text-align: left; font-family: inherit; transition: border-color 0.12s, background 0.12s, transform 0.12s; }
+  .act:hover { border-color: var(--border-strong); background: var(--bg-surface-2); transform: translateY(-1px); }
+  .act .ico { width: 36px; height: 36px; border-radius: var(--r-3); display: grid; place-items: center; flex-shrink: 0; }
+  .ico-blue   { background: rgba(59,130,246,0.18);  color: #60A5FA; }
+  .ico-purple { background: rgba(139,92,246,0.18);  color: #A78BFA; }
+  .ico-green  { background: rgba(16,185,129,0.18);  color: #34D399; }
+  .ico-orange { background: rgba(245,158,11,0.18);  color: #FBBF24; }
+  .act .body { flex: 1; min-width: 0; }
+  .act .ttl { font: 600 13px/1.3 var(--font-sans); color: var(--fg-primary); }
+  .act .desc { font: 500 11px/1.45 var(--font-sans); color: var(--fg-muted); margin-top: 2px; }
+  .act .meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .est { display: inline-flex; align-items: center; gap: 4px; font: 600 10px/1 var(--font-mono); color: #FBBF24; padding: 3px 6px; border-radius: var(--r-2); background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.20); }
+  .est-time { color: var(--fg-muted); background: var(--bg-surface-2); border-color: var(--border-subtle); }
+  .act .go { color: var(--fg-faint); flex-shrink: 0; align-self: center; }
+
+  /* two-col content */
+  .grid-2 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r-5); overflow: hidden; }
+  .ph { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border-default); }
+  .ph .l { display: flex; align-items: center; gap: 10px; }
+  .ph .l h3 { margin: 0; font: 600 14px/1 var(--font-sans); color: var(--fg-primary); }
+  .ph .count { font: 500 11px/1 var(--font-mono); color: var(--fg-muted); padding: 3px 7px; border-radius: var(--r-pill); background: var(--bg-surface-2); border: 1px solid var(--border-subtle); }
+  .ph .src-tag { font: 500 10px/1 var(--font-mono); color: var(--fg-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* summaries (recent) */
+  .sum { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); align-items: flex-start; }
+  .sum:last-of-type { border-bottom: 0; }
+  .sum .ic { width: 36px; height: 36px; border-radius: var(--r-3); display: grid; place-items: center; }
+  .sum .body .ttl { font: 600 13px/1.3 var(--font-sans); color: var(--fg-primary); }
+  .sum .body .preview { font: 500 12px/1.45 var(--font-sans); color: var(--fg-secondary); margin-top: 4px; }
+  .sum .body .ftr { display: flex; align-items: center; gap: 8px; margin-top: 6px; font: 500 11px/1 var(--font-mono); color: var(--fg-faint); }
+  .sum .ago { font: 500 11px/1 var(--font-mono); color: var(--fg-faint); white-space: nowrap; }
+
+  /* invites table */
+  .invite { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--border-subtle); }
+  .invite:last-of-type { border-bottom: 0; }
+  .invite .ttl { font: 600 13px/1.3 var(--font-sans); color: var(--fg-primary); }
+  .invite .meta-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; font: 500 11px/1.4 var(--font-mono); color: var(--fg-muted); }
+  .invite .meta-row .who { color: var(--fg-secondary); font-family: var(--font-sans); font-weight: 500; }
+  .invite-actions { display: flex; gap: 6px; align-self: center; }
+  .ia { padding: 5px 10px; border-radius: var(--r-2); font: 600 11px/1 var(--font-sans); border: 0; cursor: pointer; }
+  .ia-y { background: rgba(16,185,129,0.16); color: #34D399; }
+  .ia-y:hover { background: rgba(16,185,129,0.28); }
+  .ia-n { background: var(--bg-surface-2); color: var(--fg-secondary); }
+  .ia-n:hover { background: var(--bg-surface-3); color: var(--fg-primary); }
+
+  /* conflicts list */
+  .conflict { padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); }
+  .conflict:last-of-type { border-bottom: 0; }
+  .conflict .ttl-row { display: flex; align-items: center; gap: 10px; }
+  .conflict .ttl { font: 600 13px/1.3 var(--font-sans); color: var(--fg-primary); }
+  .conflict .pair { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; padding-left: 14px; border-left: 2px solid #EF4444; }
+  .conflict .ev { font: 500 12px/1.4 var(--font-sans); color: var(--fg-secondary); display: flex; align-items: center; gap: 8px; }
+  .conflict .ev .t { font: 500 11px/1 var(--font-mono); color: var(--fg-muted); width: 90px; flex-shrink: 0; }
+  .conflict .resolve { display: flex; gap: 6px; margin-top: 10px; }
+
+  /* approval workflow strip */
+  .approval-strip { display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(59,130,246,0.08)); border: 1px solid rgba(139,92,246,0.30); border-radius: var(--r-5); margin-bottom: 16px; }
+  .approval-strip .ic { width: 32px; height: 32px; border-radius: var(--r-3); background: rgba(139,92,246,0.25); color: #C4B5FD; display: grid; place-items: center; flex-shrink: 0; }
+  .approval-strip .body { flex: 1; }
+  .approval-strip .ttl { font: 600 13px/1.3 var(--font-sans); color: var(--fg-primary); }
+  .approval-strip .desc { font: 500 11px/1.4 var(--font-sans); color: var(--fg-secondary); margin-top: 2px; }
+  .approval-strip .acts { display: flex; gap: 8px; }
+  .btn-app { padding: 8px 14px; border-radius: var(--r-3); font: 600 12px/1 var(--font-sans); border: 0; cursor: pointer; }
+  .btn-app.primary { background: linear-gradient(160deg,#8B5CF6,#5B2EC8); color: #fff; box-shadow: var(--sh-2); }
+  .btn-app.ghost { background: var(--bg-surface-2); color: var(--fg-secondary); box-shadow: inset 0 0 0 1px var(--border-default); }
+  .btn-app:hover { filter: brightness(1.08); }
+
+  /* connections card */
+  .conn-card { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r-5); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 16px; }
+  .conn-list { display: flex; gap: 16px; }
+  .conn { display: flex; align-items: center; gap: 8px; font: 500 12px/1.3 var(--font-sans); color: var(--fg-secondary); }
+  .conn .d { width: 7px; height: 7px; border-radius: 50%; background: var(--c-success); box-shadow: 0 0 6px var(--c-success); }
+  .conn .scope { font: 500 11px/1 var(--font-mono); color: var(--fg-muted); padding: 2px 6px; border-radius: var(--r-2); background: var(--bg-surface-2); border: 1px solid var(--border-subtle); }
+  .conn-foot { font: 500 11px/1.4 var(--font-mono); color: var(--fg-faint); }
+
+  /* modal (manual run confirmation) */
+  .modal-bg { position: fixed; inset: 0; background: rgba(8,12,22,0.78); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-bg.show { display: flex; }
+  .modal { width: 100%; max-width: 460px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--r-7); padding: 24px; box-shadow: var(--sh-3); }
+  .modal h3 { margin: 0 0 6px; font: 600 16px/1.2 var(--font-sans); color: var(--fg-primary); }
+  .modal .desc { font: 500 13px/1.5 var(--font-sans); color: var(--fg-secondary); margin-bottom: 16px; }
+  .modal .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--border-subtle); font: 500 12px/1 var(--font-sans); color: var(--fg-muted); }
+  .modal .row:last-of-type { border-bottom: 1px solid var(--border-subtle); margin-bottom: 16px; }
+  .modal .row .v { color: var(--fg-primary); font-weight: 600; font-family: var(--font-mono); }
+  .modal .v.cost { color: #FBBF24; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-actions .btn-app.ghost { color: var(--fg-primary); }
+
+  /* toast */
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); padding: 10px 16px; background: var(--bg-surface-3); color: var(--fg-primary); border-radius: var(--r-pill); font: 500 12px/1 var(--font-sans); box-shadow: var(--sh-3); border: 1px solid var(--border-strong); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 200; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast .ok { color: #4ADE80; margin-right: 6px; }
+</style>
+</head>
+<body data-screen-label="02 Gmail & Calendar Agent — detail">
+
+<div class="crumbs">
+  <a href="../index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Office board
+  </a>
+  <span class="sep">›</span>
+  <span>AI Agents</span>
+  <span class="sep">›</span>
+  <span style="color:var(--fg-primary)">Gmail &amp; Calendar Agent</span>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-l">
+    <div class="hero-avatar">G&amp;C</div>
+    <div class="hero-meta">
+      <h1>Gmail &amp; Calendar Agent</h1>
+      <div class="sub">Reads Gmail and Google Calendar in read-only mode. Surfaces conflicts and pending invites for your review.</div>
+      <div class="hero-tags">
+        <span class="badge badge-approval">Waiting Approval</span>
+        <span class="tag">Read-only</span>
+        <span class="tag">Server-side AI</span>
+        <span class="tag">Manual run only</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-r">
+    <div class="cost-pill">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+      <span>STATIC LOAD</span>
+      <span style="width:1px;height:10px;background:rgba(74,222,128,0.35)"></span>
+      <span class="price">$0.00 · 0 AI calls</span>
+    </div>
+    <div class="last-sync"><span class="pulse"></span>Last sync 4 min ago · cached</div>
+  </div>
+</section>
+
+<!-- Approval strip -->
+<div class="approval-strip">
+  <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg></div>
+  <div class="body">
+    <div class="ttl">2 invite conflicts found · awaiting your decision</div>
+    <div class="desc">The agent flagged two scheduling conflicts during the last manual sync. Review before approving.</div>
+  </div>
+  <div class="acts">
+    <button class="btn-app ghost">Review later</button>
+    <button class="btn-app primary">Review conflicts ↓</button>
+  </div>
+</div>
+
+<!-- Manual actions -->
+<section class="actions-card">
+  <div class="actions-head">
+    <div>
+      <h2>Manual AI actions</h2>
+      <div class="h-sub">Nothing here runs automatically. <span class="em">AI is invoked only when you click an action below.</span> Each call is server-side; keys never leave the backend.</div>
+    </div>
+    <span class="info-pill">⚡ Cost incurred per click</span>
+  </div>
+
+  <div class="actions-grid">
+    <button class="act" data-action="Check new emails" data-cost="$0.04" data-time="~3s" data-model="haiku">
+      <div class="ico ico-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
+      <div class="body">
+        <div class="ttl">Check new emails</div>
+        <div class="desc">Fetches the last 25 unread, classifies and ranks priority.</div>
+        <div class="meta"><span class="est">~$0.04</span><span class="est est-time">~3s</span><span class="est est-time">haiku</span></div>
+      </div>
+      <svg class="go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </button>
+
+    <button class="act" data-action="Check calendar conflicts" data-cost="$0.06" data-time="~4s" data-model="haiku">
+      <div class="ico ico-purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/><path d="m8 16 2 2 6-6"/></svg></div>
+      <div class="body">
+        <div class="ttl">Check calendar conflicts</div>
+        <div class="desc">Scans the next 7 days for overlap, double-bookings, travel time gaps.</div>
+        <div class="meta"><span class="est">~$0.06</span><span class="est est-time">~4s</span><span class="est est-time">haiku</span></div>
+      </div>
+      <svg class="go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </button>
+
+    <button class="act" data-action="Review pending invites" data-cost="$0.05" data-time="~3s" data-model="haiku">
+      <div class="ico ico-orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg></div>
+      <div class="body">
+        <div class="ttl">Review pending invites</div>
+        <div class="desc">Drafts accept / decline suggestions for unread invites with rationale.</div>
+        <div class="meta"><span class="est">~$0.05</span><span class="est est-time">~3s</span><span class="est est-time">haiku</span></div>
+      </div>
+      <svg class="go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </button>
+
+    <button class="act" data-action="Generate daily summary" data-cost="$0.18" data-time="~9s" data-model="sonnet">
+      <div class="ico ico-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></div>
+      <div class="body">
+        <div class="ttl">Generate daily summary</div>
+        <div class="desc">Long-form briefing: key emails, today's events, suggested focus blocks.</div>
+        <div class="meta"><span class="est">~$0.18</span><span class="est est-time">~9s</span><span class="est est-time">sonnet</span></div>
+      </div>
+      <svg class="go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</section>
+
+<!-- Two-col content -->
+<section class="grid-2">
+  <!-- Recent summaries -->
+  <div class="panel">
+    <div class="ph">
+      <div class="l">
+        <h3>Recent summaries</h3>
+        <span class="count">3 of 12</span>
+      </div>
+      <span class="src-tag">cached · db</span>
+    </div>
+
+    <div class="sum">
+      <div class="ic ico-green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+      <div class="body">
+        <div class="ttl">Yesterday's daily briefing</div>
+        <div class="preview">14 unread · 3 priority threads · 5 events · 1 conflict resolved. Top thread: Q3 board prep from L. Tran.</div>
+        <div class="ftr">
+          <span class="badge badge-completed">Completed</span>
+          <span>generated · sonnet · $0.21</span>
+        </div>
+      </div>
+      <span class="ago">yesterday 8:02 AM</span>
+    </div>
+
+    <div class="sum">
+      <div class="ic ico-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
+      <div class="body">
+        <div class="ttl">Email triage · last 25 unread</div>
+        <div class="preview">12 high-priority flagged. 6 newsletter / promo auto-archived (pending your review). 3 require reply.</div>
+        <div class="ftr">
+          <span class="badge badge-review">Needs Review</span>
+          <span>haiku · $0.04</span>
+        </div>
+      </div>
+      <span class="ago">2 hr ago</span>
+    </div>
+
+    <div class="sum">
+      <div class="ic ico-purple"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></div>
+      <div class="body">
+        <div class="ttl">Calendar scan · next 7 days</div>
+        <div class="preview">2 conflicts found. 4 back-to-back meetings without travel time. 1 invite with no agenda.</div>
+        <div class="ftr">
+          <span class="badge badge-approval">Waiting Approval</span>
+          <span>haiku · $0.06</span>
+        </div>
+      </div>
+      <span class="ago">4 min ago</span>
+    </div>
+  </div>
+
+  <!-- Pending invites + Conflicts (stacked) -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="panel">
+      <div class="ph">
+        <div class="l">
+          <h3>Pending calendar invites</h3>
+          <span class="count">4</span>
+        </div>
+        <span class="src-tag">read-only · gcal</span>
+      </div>
+
+      <div class="invite">
+        <div>
+          <div class="ttl">Q3 OKR planning workshop</div>
+          <div class="meta-row"><span class="who">L. Tran</span>· Thu May 9 · 10:00 – 11:30 AM</div>
+        </div>
+        <div class="invite-actions"><button class="ia ia-y">Accept</button><button class="ia ia-n">Decline</button></div>
+      </div>
+
+      <div class="invite">
+        <div>
+          <div class="ttl">Vendor sync · Kestrel Labs</div>
+          <div class="meta-row"><span class="who">M. Okafor</span>· Fri May 10 · 2:00 PM</div>
+        </div>
+        <div class="invite-actions"><button class="ia ia-y">Accept</button><button class="ia ia-n">Decline</button></div>
+      </div>
+
+      <div class="invite">
+        <div>
+          <div class="ttl">Hiring debrief — Senior PM panel</div>
+          <div class="meta-row"><span class="who">P. Chen</span>· Mon May 13 · 9:30 AM</div>
+        </div>
+        <div class="invite-actions"><button class="ia ia-y">Accept</button><button class="ia ia-n">Decline</button></div>
+      </div>
+
+      <div class="invite">
+        <div>
+          <div class="ttl">Investor 1:1 · Bridgewater</div>
+          <div class="meta-row"><span class="who">S. Rao</span>· Tue May 14 · 4:00 PM</div>
+        </div>
+        <div class="invite-actions"><button class="ia ia-y">Accept</button><button class="ia ia-n">Decline</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph">
+        <div class="l">
+          <h3>Possible conflicts</h3>
+          <span class="count" style="color:#F87171;background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.25)">2</span>
+        </div>
+        <span class="src-tag">last scan · 4m ago</span>
+      </div>
+
+      <div class="conflict">
+        <div class="ttl-row">
+          <span class="badge badge-error">Overlap</span>
+          <div class="ttl">Thu May 9 · 10:00 – 11:00 AM</div>
+        </div>
+        <div class="pair">
+          <div class="ev"><span class="t">10:00 AM</span><span>Q3 OKR planning workshop</span></div>
+          <div class="ev"><span class="t">10:30 AM</span><span>Project Review (existing)</span></div>
+        </div>
+        <div class="resolve">
+          <button class="ia ia-y">Reschedule existing</button>
+          <button class="ia ia-n">Decline new</button>
+          <button class="ia ia-n">Keep both</button>
+        </div>
+      </div>
+
+      <div class="conflict">
+        <div class="ttl-row">
+          <span class="badge badge-review">Tight</span>
+          <div class="ttl">Mon May 13 · no travel time</div>
+        </div>
+        <div class="pair">
+          <div class="ev"><span class="t">9:30 AM</span><span>Hiring debrief (45 min)</span></div>
+          <div class="ev"><span class="t">10:15 AM</span><span>Client call · downtown office</span></div>
+        </div>
+        <div class="resolve">
+          <button class="ia ia-y">Suggest move</button>
+          <button class="ia ia-n">Ignore</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Connections -->
+<section class="conn-card">
+  <div class="conn-list">
+    <div class="conn"><span class="d"></span>Gmail<span class="scope">readonly</span></div>
+    <div class="conn"><span class="d"></span>Google Calendar<span class="scope">readonly</span></div>
+  </div>
+  <div class="conn-foot">Server-side OAuth · keys never exposed to client · revoke in <span style="color:var(--c-blue-2);cursor:pointer">Settings →</span></div>
+</section>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="m-ttl">Run action</h3>
+    <div class="desc">This will call the AI provider through your server-side route. Confirm to proceed.</div>
+    <div class="row"><span>Action</span><span class="v" id="m-act">—</span></div>
+    <div class="row"><span>Estimated cost</span><span class="v cost" id="m-cost">$0.00</span></div>
+    <div class="row"><span>Estimated time</span><span class="v" id="m-time">—</span></div>
+    <div class="row"><span>Model</span><span class="v" id="m-model">—</span></div>
+    <div class="modal-actions">
+      <button class="btn-app ghost" id="m-cancel">Cancel</button>
+      <button class="btn-app primary" id="m-run">Run now</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="ok">✓</span><span id="toastText">Done</span></div>
+
+<script>
+  const modal = document.getElementById('modal');
+  const mTtl = document.getElementById('m-ttl');
+  const mAct = document.getElementById('m-act');
+  const mCost = document.getElementById('m-cost');
+  const mTime = document.getElementById('m-time');
+  const mModel = document.getElementById('m-model');
+  const mRun = document.getElementById('m-run');
+  const mCancel = document.getElementById('m-cancel');
+  const toast = document.getElementById('toast');
+  const toastText = document.getElementById('toastText');
+
+  function showToast(msg) {
+    toastText.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  document.querySelectorAll('.act').forEach(b => {
+    b.addEventListener('click', () => {
+      mTtl.textContent = b.dataset.action;
+      mAct.textContent = b.dataset.action;
+      mCost.textContent = b.dataset.cost;
+      mTime.textContent = b.dataset.time;
+      mModel.textContent = b.dataset.model;
+      modal.classList.add('show');
+    });
+  });
+
+  mCancel.addEventListener('click', () => modal.classList.remove('show'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+  mRun.addEventListener('click', () => {
+    const action = mAct.textContent;
+    const cost = mCost.textContent;
+    modal.classList.remove('show');
+    showToast('Running "' + action + '" · ' + cost + ' (mock)');
+  });
+
+  // Invite quick-actions
+  document.querySelectorAll('.ia').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      showToast(b.textContent + ' · queued · $0 (no AI call)');
+    });
+  });
+</script>
+
+</body>
+</html>

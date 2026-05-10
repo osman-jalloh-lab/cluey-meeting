@@ -70,118 +70,143 @@ export default function EmailPage() {
   const selectedAccountInfo = accounts.find(a => a.id === selectedAccount)
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--foreground)' }}>✉️ Email</h1>
-      <p className="text-sm mb-5" style={{ color: 'var(--muted)' }}>View and summarize emails across all connected accounts.</p>
+    <div className="pg-wrap">
+      {/* Page topbar */}
+      <div className="pg-topbar">
+        <div className="pg-topbar-l">
+          <h1>✉️ Email</h1>
+          <p style={{ margin: 0, font: '400 12px/1 var(--font-sans)', color: 'var(--fg-muted)' }}>Inbox across all connected accounts</p>
+        </div>
+        {selectedAccountInfo && (
+          <div className="pg-topbar-r">
+            <button
+              onClick={summarize}
+              disabled={summarizing}
+              className="btn-primary"
+              style={{ opacity: summarizing ? 0.6 : 1, cursor: summarizing ? 'not-allowed' : 'pointer' }}
+            >
+              {summarizing ? '⟳ Analyzing...' : '⚡ AI Summarize'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {accounts.length === 0 ? (
-        <div className="text-center p-8 rounded-xl" style={{ border: '1px dashed var(--border)' }}>
-          <p className="text-2xl mb-2">📭</p>
-          <p className="text-sm mb-3" style={{ color: 'var(--muted)' }}>No Gmail accounts connected.</p>
-          <a href="/accounts" className="text-sm" style={{ color: 'var(--primary)' }}>Connect an account →</a>
+        <div className="pg-panel">
+          <div className="empty-state">
+            <div className="icon">📭</div>
+            <p className="msg">No Gmail accounts connected.</p>
+            <p className="hint"><a href="/accounts">Connect an account →</a></p>
+          </div>
         </div>
       ) : (
-        <div className="flex gap-4">
-          {/* Account tabs */}
-          <div className="w-48 flex-shrink-0">
-            <p className="text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Accounts</p>
-            <div className="space-y-1">
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          {/* Account sidebar */}
+          <div style={{ width: '200px', flexShrink: 0 }}>
+            <div className="pg-panel">
+              <div className="pg-panel-head">
+                <div className="l"><h3>Accounts</h3></div>
+                <span className="count">{accounts.length}</span>
+              </div>
               {accounts.map(acc => (
                 <button
                   key={acc.id}
                   onClick={() => setSelectedAccount(acc.id)}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
                   style={{
-                    background: selectedAccount === acc.id ? 'rgba(99,102,241,0.1)' : 'transparent',
-                    color: selectedAccount === acc.id ? 'var(--primary)' : 'var(--muted)',
-                    border: 'none',
-                    cursor: 'pointer',
+                    width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none',
+                    borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer',
+                    background: selectedAccount === acc.id ? 'rgba(99,153,255,0.08)' : 'transparent',
+                    borderLeft: selectedAccount === acc.id ? '2px solid var(--c-blue-2)' : '2px solid transparent',
+                    transition: 'background 0.15s',
                   }}
                 >
-                  <p className="font-medium">{acc.accountLabel}</p>
-                  <p className="text-xs truncate">{acc.emailAddress}</p>
+                  <p style={{ margin: '0 0 2px', font: '600 12px/1 var(--font-sans)', color: selectedAccount === acc.id ? 'var(--c-blue-2)' : 'var(--fg-primary)' }}>
+                    {acc.accountLabel}
+                  </p>
+                  <p style={{ margin: 0, font: '400 11px/1 var(--font-mono)', color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {acc.emailAddress}
+                  </p>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Main content */}
-          <div className="flex-1 min-w-0">
-            {selectedAccountInfo && (
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>
-                  {selectedAccountInfo.accountLabel}
-                  <span className="ml-2 font-normal" style={{ color: 'var(--muted)' }}>
-                    {selectedAccountInfo.emailAddress}
-                  </span>
-                </h2>
-                <button
-                  onClick={summarize}
-                  disabled={summarizing}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
-                  style={{ background: 'var(--primary)', color: 'white', border: 'none', cursor: summarizing ? 'not-allowed' : 'pointer' }}
-                >
-                  {summarizing ? '⟳ Analyzing...' : '⚡ AI Summarize'}
-                </button>
-              </div>
-            )}
-
-            {/* Summary */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* AI Summary */}
             {summary && (
-              <div className="mb-4 p-4 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                <p className="text-sm mb-3" style={{ color: 'var(--foreground)' }}>{summary.summary}</p>
-                {summary.urgentEmails.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold mb-2" style={{ color: 'var(--muted)' }}>URGENT</p>
-                    {summary.urgentEmails.map((e, i) => (
-                      <div key={i} className="text-xs mb-1 p-2 rounded" style={{ background: 'rgba(239,68,68,0.1)' }}>
-                        <span style={{ color: '#ef4444' }}>🔴</span>{' '}
-                        <span style={{ color: 'var(--foreground)' }}>{e.from}</span>{' '}
-                        <span style={{ color: 'var(--muted)' }}>— {e.reason}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div className="pg-panel" style={{ marginBottom: '16px', borderColor: 'rgba(99,153,255,0.25)' }}>
+                <div className="pg-panel-head">
+                  <div className="l"><h3>⚡ AI Summary</h3></div>
+                  <span className="badge badge-online">live</span>
+                </div>
+                <div style={{ padding: '14px 18px' }}>
+                  <p style={{ margin: '0 0 12px', font: '400 13px/1.6 var(--font-sans)', color: 'var(--fg-primary)' }}>{summary.summary}</p>
+                  {summary.urgentEmails.length > 0 && (
+                    <>
+                      <p style={{ margin: '0 0 6px', font: '600 10px/1 var(--font-sans)', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>URGENT</p>
+                      {summary.urgentEmails.map((e, i) => (
+                        <div key={i} className="pg-row" style={{ borderBottom: '1px solid var(--border-subtle)', padding: '8px 0' }}>
+                          <span className="badge badge-error" style={{ flexShrink: 0 }}>urgent</span>
+                          <div className="body" style={{ flex: 1, marginLeft: '10px' }}>
+                            <p className="ttl">{e.from}</p>
+                            <p className="sub">{e.reason}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Email list */}
-            {loadingEmails ? (
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>Loading emails...</p>
-            ) : emails.length === 0 ? (
-              <div className="text-center p-8 rounded-xl" style={{ border: '1px dashed var(--border)' }}>
-                <p className="text-sm" style={{ color: 'var(--muted)' }}>No cached emails. Click "AI Summarize" to fetch and analyze this inbox.</p>
+            <div className="pg-panel">
+              <div className="pg-panel-head">
+                <div className="l">
+                  <h3>{selectedAccountInfo?.accountLabel ?? 'Inbox'}</h3>
+                  {!loadingEmails && <span className="count">{emails.length}</span>}
+                </div>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {emails.map(email => (
-                  <div
-                    key={email.id}
-                    className="p-3 rounded-xl"
-                    style={{
-                      background: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      borderLeft: email.isUnread ? '3px solid var(--primary)' : '1px solid var(--border)',
-                    }}
-                  >
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-sm font-medium truncate" style={{ color: 'var(--foreground)' }}>{email.from}</p>
-                      {email.isImportant && <span className="text-xs">⭐</span>}
-                      {email.needsReply && (
-                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>reply needed</span>
-                      )}
-                      <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>
-                        {formatRelativeTime(email.receivedAt)}
-                      </span>
+
+              {loadingEmails ? (
+                <div style={{ padding: '20px 18px' }}>
+                  {[1,2,3].map(i => (
+                    <div key={i} className="skel" style={{ height: '56px', marginBottom: '8px', borderRadius: 'var(--r-3)' }} />
+                  ))}
+                </div>
+              ) : emails.length === 0 ? (
+                <div className="empty-state">
+                  <div className="icon">📭</div>
+                  <p className="msg">No cached emails yet.</p>
+                  <p className="hint">Click "AI Summarize" above to fetch and analyze this inbox.</p>
+                </div>
+              ) : (
+                emails.map(email => (
+                  <div key={email.id} className="pg-row" style={{ borderLeft: email.isUnread ? '3px solid var(--c-blue-2)' : '3px solid transparent' }}>
+                    <div className="ic" style={{ background: email.isUnread ? 'rgba(99,153,255,0.12)' : 'var(--bg-surface-2)', color: email.isUnread ? 'var(--c-blue-2)' : 'var(--fg-muted)', fontSize: '14px' }}>
+                      ✉️
                     </div>
-                    <p className="text-xs font-medium truncate" style={{ color: email.isUnread ? 'var(--foreground)' : 'var(--muted)' }}>
-                      {email.subject ?? '(no subject)'}
-                    </p>
-                    <p className="text-xs truncate mt-0.5" style={{ color: 'var(--muted)' }}>{email.snippet}</p>
+                    <div className="body">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <p className="ttl" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email.from}</p>
+                        {email.isImportant && <span style={{ fontSize: '12px' }}>⭐</span>}
+                        {email.needsReply && <span className="badge badge-review">reply needed</span>}
+                      </div>
+                      <p className="sub" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: email.isUnread ? 'var(--fg-primary)' : 'var(--fg-secondary)' }}>
+                        {email.subject ?? '(no subject)'}
+                      </p>
+                      {email.snippet && (
+                        <p style={{ margin: '2px 0 0', font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {email.snippet}
+                        </p>
+                      )}
+                    </div>
+                    <span className="ts">{formatRelativeTime(email.receivedAt)}</span>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

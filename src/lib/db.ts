@@ -6,11 +6,17 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  const dbUrl = process.env.DATABASE_URL ?? 'file:./dev.db'
-  // libsql expects file:./path format
-  const libsqlUrl = dbUrl.startsWith('file:') ? dbUrl : `file:${dbUrl}`
+  // Use Turso in prod, local sqlite in dev
+  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || 'file:./dev.db'
+  const authToken = process.env.TURSO_AUTH_TOKEN
 
-  const adapter = new PrismaLibSql({ url: libsqlUrl })
+  // Format local URLs correctly
+  const formattedUrl = url.startsWith('file:') || url.startsWith('libsql:') || url.startsWith('http')
+    ? url
+    : `file:${url}`
+
+  // Prisma 7: PrismaLibSql is a factory — pass config directly, not a pre-created client
+  const adapter = new PrismaLibSql({ url: formattedUrl, authToken })
 
   return new PrismaClient({
     adapter,

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { padding: 0; background: var(--bg-page); display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .rail { background: var(--bg-rail); border-right: 1px solid var(--border-subtle); padding: 18px 14px; display: flex; flex-direction: column; gap: 22px; }
+  .head { display: flex; align-items: center; gap: 10px; padding: 4px 6px; }
+  .avatar { width: 38px; height: 38px; border-radius: var(--r-3); background: linear-gradient(160deg,#3B82F6,#1E5BD0); display: grid; place-items: center; font: 700 14px/1 var(--font-pixel); color: #fff; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25); }
+  .head-meta .who { font: 600 14px/1.1 var(--font-sans); color: var(--fg-primary); }
+  .head-meta .role { font: 500 11px/1.3 var(--font-sans); color: var(--fg-muted); }
+  .head-meta .status { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font: 500 11px/1 var(--font-sans); color: var(--c-success); }
+  .head-meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-success); box-shadow: 0 0 8px var(--c-success); }
+  .group { display: flex; flex-direction: column; gap: 2px; }
+  .group-title { font: 600 10px/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-faint); padding: 0 8px 8px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-3); color: var(--fg-secondary); cursor: pointer; font: 500 13px/1 var(--font-sans); }
+  .item:hover { background: var(--bg-surface); color: var(--fg-primary); }
+  .item.active { background: var(--bg-surface-2); color: var(--fg-primary); box-shadow: inset 2px 0 0 var(--c-purple); }
+  .item svg { color: currentColor; opacity: 0.85; }
+  .qa { display: flex; flex-direction: column; gap: 8px; }
+  .qa .item { color: #fff; padding: 10px 12px; }
+  .qa .b1 { background: linear-gradient(160deg,#8B5CF6,#5B2EC8); }
+  .qa .b2 { background: linear-gradient(160deg,#3B82F6,#1E5BD0); }
+  .qa .b3 { background: linear-gradient(160deg,#14B8A6,#0A7C73); }
+  .qa .b4 { background: var(--bg-surface-2); box-shadow: inset 0 0 0 1px var(--border-default); }
+  .system { background: var(--bg-surface); border-radius: var(--r-3); padding: 12px; box-shadow: inset 0 0 0 1px var(--border-default); }
+  .system .label { font: 600 10px/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-faint); }
+  .system .v1 { display: flex; align-items: center; gap: 6px; margin-top: 8px; font: 500 12px/1 var(--font-sans); color: var(--c-success); }
+  .system .v2 { display: flex; align-items: center; gap: 6px; margin-top: 4px; font: 500 12px/1 var(--font-sans); color: var(--c-blue-2); }
+  .spark { display: flex; align-items: end; gap: 2px; height: 32px; margin-top: 10px; }
+  .spark span { flex: 1; background: linear-gradient(180deg,var(--c-blue-2),var(--c-blue)); border-radius: 1px 1px 0 0; }
+  .footer { margin-top: auto; }
+</style></head><body>
+<aside class="rail">
+  <div class="head">
+    <div class="avatar">A\\</div>
+    <div class="head-meta">
+      <div class="who">Office</div>
+      <div class="role">You (CEO)</div>
+      <div class="status"><span class="dot"></span>Online</div>
+    </div>
+  </div>
+
+  <nav class="group">
+    <div class="group-title">Main Navigation</div>
+    <a class="item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 9-8 9 8v10a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>Office</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Email Center</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>Calendar</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m9 12 2 2 4-4"/></svg>Tasks</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Job Search</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 19a4.5 4.5 0 0 1 7 0"/></svg>AI Agents</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M4 16h15"/></svg>Knowledge Base</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V10M9 20V4M15 20v-7M21 20v-4"/></svg>Analytics</a>
+    <a class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+  </nav>
+
+  <div class="group qa">
+    <div class="group-title">Quick Actions</div>
+    <a class="item b1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New Task</a>
+    <a class="item b2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Send Email</a>
+    <a class="item b3"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search Jobs</a>
+    <a class="item b4"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11 7.4L3 21l1.6-7A8 8 0 1 1 21 12z"/></svg>Chat AI</a>
+  </div>
+
+  <div class="system footer">
+    <div class="label">AI System Status</div>
+    <div class="v1"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>All Systems Operational</div>
+    <div class="v2"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>12 Agents Online</div>
+    <div class="spark">
+      <span style="height:40%"></span><span style="height:65%"></span><span style="height:45%"></span><span style="height:80%"></span><span style="height:60%"></span><span style="height:90%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:75%"></span><span style="height:85%"></span><span style="height:50%"></span><span style="height:95%"></span>
+    </div>
+  </div>
+</aside>
+<main></main>
+</body></html>

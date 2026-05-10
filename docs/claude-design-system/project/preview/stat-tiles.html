@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { padding: 28px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; background: #0E1424; }
+  .tile { border-radius: var(--r-5); padding: 14px 16px; min-height: 92px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--sh-2); position: relative; overflow: hidden; }
+  .tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.10), transparent 55%); pointer-events: none; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .ico { width: 32px; height: 32px; border-radius: var(--r-3); background: rgba(255,255,255,0.18); display: grid; place-items: center; flex-shrink: 0; }
+  .ico svg { stroke: #fff; }
+  .role { font: 600 10px/1 var(--font-sans); letter-spacing: 0.10em; text-transform: uppercase; opacity: 0.85; }
+  .stat { font: 700 26px/1 var(--font-sans); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .sub  { font: 500 11px/1.3 var(--font-sans); opacity: 0.85; }
+</style></head><body>
+<div class="tile" style="background:linear-gradient(160deg,#3B82F6,#1E5BD0)">
+  <div class="row"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div><div><div class="role">Emails</div></div></div>
+  <div><div class="stat">156</div><div class="sub">High Priority: 18</div></div>
+</div>
+<div class="tile" style="background:linear-gradient(160deg,#8B5CF6,#5B2EC8)">
+  <div class="row"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></div><div><div class="role">Calendar</div></div></div>
+  <div><div class="stat">9</div><div class="sub">Today's Events</div></div>
+</div>
+<div class="tile" style="background:linear-gradient(160deg,#10B981,#0A7C5A)">
+  <div class="row"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m9 12 2 2 4-4"/></svg></div><div><div class="role">Tasks</div></div></div>
+  <div><div class="stat">34</div><div class="sub">Pending Tasks</div></div>
+</div>
+<div class="tile" style="background:linear-gradient(160deg,#F59E0B,#B26E04)">
+  <div class="row"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></div><div><div class="role">Jobs</div></div></div>
+  <div><div class="stat">62</div><div class="sub">Applications</div></div>
+</div>
+<div class="tile" style="background:linear-gradient(160deg,#14B8A6,#0A7C73)">
+  <div class="row"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 18a5 5 0 0 0-1-9.9A7 7 0 1 0 4 14h11a3 3 0 0 1 0 6"/></svg></div><div><div class="role">API Cost</div></div></div>
+  <div><div class="stat">$18.64</div><div class="sub">This Month</div></div>
+</div>
+<div class="tile" style="background:linear-gradient(160deg,#EC4899,#B12973)">
+  <div class="row"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 19a4.5 4.5 0 0 1 7 0"/></svg></div><div><div class="role">Agents</div></div></div>
+  <div><div class="stat">12</div><div class="sub">Active Now</div></div>
+</div>
+</body></html>

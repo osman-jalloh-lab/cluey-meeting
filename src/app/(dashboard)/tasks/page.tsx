@@ -66,112 +66,117 @@ export default function TasksPage() {
   })
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--foreground)' }}>✅ Tasks</h1>
-      <p className="text-sm mb-5" style={{ color: 'var(--muted)' }}>Manage tasks extracted from emails or added manually.</p>
-
-      {/* Add task */}
-      <div className="flex gap-3 mb-5">
-        <input
-          value={newTitle}
-          onChange={e => setNewTitle(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addTask()}
-          placeholder="Add a task..."
-          className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
-        />
-        <select
-          value={newPriority}
-          onChange={e => setNewPriority(e.target.value)}
-          className="px-3 py-2 rounded-lg text-sm outline-none"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)', cursor: 'pointer' }}
-        >
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <button
-          onClick={addTask}
-          disabled={adding || !newTitle.trim()}
-          className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
-          style={{ background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer' }}
-        >
-          Add
-        </button>
+    <div className="pg-wrap">
+      {/* Page topbar */}
+      <div className="pg-topbar">
+        <div className="pg-topbar-l">
+          <h1>✅ Tasks</h1>
+          <p style={{ margin: 0, font: '400 12px/1 var(--font-sans)', color: 'var(--fg-muted)' }}>Manage tasks extracted from emails or added manually.</p>
+        </div>
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-4">
+      {/* Add task */}
+      <div className="pg-panel" style={{ marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '10px', padding: '14px 18px' }}>
+          <input
+            value={newTitle}
+            onChange={e => setNewTitle(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addTask()}
+            placeholder="Add a task..."
+            style={{
+              flex: 1, padding: '8px 12px', borderRadius: 'var(--r-3)',
+              background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)',
+              color: 'var(--fg-primary)', font: '400 13px/1 var(--font-sans)', outline: 'none',
+            }}
+          />
+          <select
+            value={newPriority}
+            onChange={e => setNewPriority(e.target.value)}
+            style={{
+              padding: '8px 12px', borderRadius: 'var(--r-3)',
+              background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)',
+              color: 'var(--fg-primary)', font: '400 13px/1 var(--font-sans)', cursor: 'pointer',
+            }}
+          >
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <button
+            onClick={addTask}
+            disabled={adding || !newTitle.trim()}
+            className="btn-primary"
+            style={{ opacity: (adding || !newTitle.trim()) ? 0.5 : 1, cursor: (adding || !newTitle.trim()) ? 'not-allowed' : 'pointer' }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      {/* Filter + count */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
         {(['all', 'pending', 'done'] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className="px-3 py-1 rounded-lg text-xs capitalize transition-all"
             style={{
-              background: filter === f ? 'var(--primary)' : 'var(--card)',
-              color: filter === f ? 'white' : 'var(--muted)',
-              border: `1px solid ${filter === f ? 'var(--primary)' : 'var(--border)'}`,
-              cursor: 'pointer',
+              padding: '5px 14px', borderRadius: 'var(--r-pill)',
+              background: filter === f ? 'var(--c-blue-2)' : 'var(--bg-surface)',
+              color: filter === f ? '#fff' : 'var(--fg-muted)',
+              border: filter === f ? 'none' : '1px solid var(--border-default)',
+              font: '600 11px/1 var(--font-sans)', textTransform: 'capitalize', cursor: 'pointer',
             }}
           >
             {f}
           </button>
         ))}
-        <span className="ml-auto text-xs self-center" style={{ color: 'var(--muted)' }}>{filtered.length} tasks</span>
+        <span style={{ marginLeft: 'auto', font: '500 11px/1 var(--font-mono)', color: 'var(--fg-muted)' }}>{filtered.length} tasks</span>
       </div>
 
       {/* Task list */}
       {loading ? (
-        <p className="text-sm" style={{ color: 'var(--muted)' }}>Loading...</p>
+        <div className="pg-panel">
+          {[1,2,3].map(i => <div key={i} className="skel" style={{ height: '56px', margin: '8px', borderRadius: 'var(--r-3)' }} />)}
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center p-8 rounded-xl" style={{ border: '1px dashed var(--border)' }}>
-          <p className="text-2xl mb-2">✨</p>
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>No tasks here. Generate a daily briefing to extract tasks from emails.</p>
+        <div className="pg-panel">
+          <div className="empty-state">
+            <div className="icon">✨</div>
+            <p className="msg">No tasks here.</p>
+            <p className="hint">Generate a daily briefing to extract tasks from emails.</p>
+          </div>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="pg-panel">
           {filtered.map(task => (
             <div
               key={task.id}
-              className="p-4 rounded-xl flex items-start gap-3 transition-all"
-              style={{
-                background: 'var(--card)',
-                border: '1px solid var(--border)',
-                opacity: task.status === 'done' ? 0.6 : 1,
-              }}
+              className="pg-row"
+              style={{ opacity: task.status === 'done' ? 0.55 : 1 }}
             >
               <button
                 onClick={() => updateStatus(task.id, task.status === 'done' ? 'pending' : 'done')}
-                className="w-5 h-5 rounded border flex-shrink-0 mt-0.5 flex items-center justify-center transition-all"
                 style={{
-                  border: task.status === 'done' ? 'none' : '2px solid var(--border)',
-                  background: task.status === 'done' ? 'var(--secondary)' : 'transparent',
-                  cursor: 'pointer',
-                  color: 'white',
-                  fontSize: '11px',
+                  width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                  border: task.status === 'done' ? 'none' : '2px solid var(--border-strong)',
+                  background: task.status === 'done' ? 'var(--c-teal-2)' : 'transparent',
+                  cursor: 'pointer', color: 'white', font: '700 11px/1 var(--font-sans)',
+                  display: 'grid', placeItems: 'center',
                 }}
               >
                 {task.status === 'done' && '✓'}
               </button>
 
-              <div className="flex-1 min-w-0">
-                <p className={cn('text-sm font-medium', task.status === 'done' && 'line-through')}
-                   style={{ color: 'var(--foreground)' }}>
+              <div className="body">
+                <p className="ttl" style={{ textDecoration: task.status === 'done' ? 'line-through' : 'none' }}>
                   {task.title}
                 </p>
-                {task.description && (
-                  <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--muted)' }}>{task.description}</p>
-                )}
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={cn('text-xs px-1.5 py-0.5 rounded font-medium', getPriorityColor(task.priority))}>
-                    {task.priority}
-                  </span>
-                  {task.dueDate && (
-                    <span className="text-xs" style={{ color: 'var(--muted)' }}>Due {formatDate(task.dueDate)}</span>
-                  )}
+                {task.description && <p className="sub">{task.description}</p>}
+                <div className="ftr">
+                  <span className={cn('tag-chip', getPriorityColor(task.priority))}>{task.priority}</span>
+                  {task.dueDate && <span className="tag-chip">Due {formatDate(task.dueDate)}</span>}
                   {task.sourceType && task.sourceType !== 'manual' && (
-                    <span className="text-xs px-1.5 py-0.5 rounded"
-                          style={{ background: 'rgba(99,102,241,0.1)', color: 'var(--primary)' }}>
+                    <span className="tag-chip" style={{ color: 'var(--c-blue-2)', borderColor: 'rgba(99,153,255,0.3)' }}>
                       from {task.sourceType}
                     </span>
                   )}
@@ -180,10 +185,9 @@ export default function TasksPage() {
 
               <button
                 onClick={() => deleteTask(task.id)}
-                className="text-xs opacity-0 group-hover:opacity-100 transition-all p-1 rounded"
-                style={{ color: 'var(--muted)', cursor: 'pointer', background: 'transparent', border: 'none' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+                style={{ color: 'var(--fg-faint)', cursor: 'pointer', background: 'transparent', border: 'none', font: '400 12px/1 var(--font-sans)', padding: '4px', borderRadius: 'var(--r-2)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#F87171')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-faint)')}
               >
                 ✕
               </button>

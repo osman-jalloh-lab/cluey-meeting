@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Office board — Pixel Agents</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  /* ============ LAYOUT ============ */
+  body {
+    display: grid;
+    grid-template-columns: 240px 1fr 300px;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 14px;
+    padding: 14px;
+    min-height: 100vh;
+    background: var(--bg-page);
+  }
+  .rail      { grid-row: 1 / span 4; }
+  .topbar    { grid-column: 2 / span 2; grid-row: 1; }
+  .stats     { grid-column: 2 / span 2; grid-row: 2; }
+  .office    { grid-column: 2; grid-row: 3; }
+  .right     { grid-column: 3; grid-row: 3; }
+  .analytics { grid-column: 2 / span 2; grid-row: 4; }
+
+  /* ============ STATUS BADGE SYSTEM ============ */
+  /* 6 canonical states: Online · Idle · Needs Review · Waiting Approval · Error · Completed */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px 3px 7px;
+    border-radius: var(--r-pill);
+    font: 600 10px/1.4 var(--font-sans);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge::before { content: ""; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .badge-online    { background: rgba(34,197,94,0.14);  color: #4ADE80; }
+  .badge-online::before    { background: #22C55E; box-shadow: 0 0 6px #22C55E; }
+  .badge-idle      { background: rgba(134,147,176,0.12); color: #B7C0D6; }
+  .badge-idle::before      { background: #8693B0; }
+  .badge-review    { background: rgba(245,158,11,0.16); color: #FBBF24; }
+  .badge-review::before    { background: #F59E0B; box-shadow: 0 0 6px #F59E0B; }
+  .badge-approval  { background: rgba(139,92,246,0.18); color: #C4B5FD; }
+  .badge-approval::before  { background: #8B5CF6; box-shadow: 0 0 6px #8B5CF6; }
+  .badge-error     { background: rgba(239,68,68,0.16);  color: #F87171; }
+  .badge-error::before     { background: #EF4444; box-shadow: 0 0 6px #EF4444; }
+  .badge-completed { background: rgba(59,130,246,0.14); color: #60A5FA; }
+  .badge-completed::before { background: #3B82F6; }
+
+  /* ============ RAIL ============ */
+  .rail { background: var(--bg-rail); border-radius: var(--r-5); border: 1px solid var(--border-subtle); padding: 18px 14px; display: flex; flex-direction: column; gap: 22px; }
+  .head { display: flex; align-items: center; gap: 10px; padding: 4px 6px; }
+  .avatar { width: 38px; height: 38px; border-radius: var(--r-3); background: linear-gradient(160deg,#3B82F6,#1E5BD0); display: grid; place-items: center; font: 700 12px/1 var(--font-pixel); color: #fff; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25); }
+  .head-meta .who { font: 600 14px/1.1 var(--font-sans); color: var(--fg-primary); }
+  .head-meta .role { font: 500 11px/1.3 var(--font-sans); color: var(--fg-muted); }
+  .head-meta .status { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font: 500 11px/1 var(--font-sans); color: var(--c-success); }
+  .head-meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-success); box-shadow: 0 0 8px var(--c-success); }
+  .group { display: flex; flex-direction: column; gap: 2px; }
+  .group-title { font: 600 10px/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-faint); padding: 0 8px 8px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-3); color: var(--fg-secondary); cursor: pointer; font: 500 13px/1 var(--font-sans); text-decoration: none; }
+  .item:hover { background: var(--bg-surface); color: var(--fg-primary); }
+  .item.active { background: var(--bg-surface-2); color: var(--fg-primary); box-shadow: inset 2px 0 0 var(--c-purple); }
+  .qa { display: flex; flex-direction: column; gap: 8px; }
+  .qa .item { color: #fff; padding: 10px 12px; }
+  .qa .b1 { background: linear-gradient(160deg,#8B5CF6,#5B2EC8); }
+  .qa .b2 { background: linear-gradient(160deg,#3B82F6,#1E5BD0); }
+  .qa .b3 { background: linear-gradient(160deg,#14B8A6,#0A7C73); }
+  .qa .b4 { background: var(--bg-surface-2); box-shadow: inset 0 0 0 1px var(--border-default); }
+  .system { background: var(--bg-surface); border-radius: var(--r-3); padding: 12px; box-shadow: inset 0 0 0 1px var(--border-default); }
+  .system .label { font: 600 10px/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-faint); }
+  .system .v1 { display: flex; align-items: center; gap: 6px; margin-top: 8px; font: 500 12px/1 var(--font-sans); color: var(--c-success); }
+  .system .v2 { display: flex; align-items: center; gap: 6px; margin-top: 4px; font: 500 12px/1 var(--font-sans); color: var(--c-blue-2); }
+  .spark { display: flex; align-items: end; gap: 2px; height: 28px; margin-top: 10px; }
+  .spark span { flex: 1; background: linear-gradient(180deg,var(--c-blue-2),var(--c-blue)); border-radius: 1px 1px 0 0; }
+  .footer { margin-top: auto; }
+  .dark-toggle { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: var(--r-3); background: var(--bg-surface); box-shadow: inset 0 0 0 1px var(--border-default); font: 500 12px/1 var(--font-sans); color: var(--fg-secondary); margin-top: 12px; }
+
+  /* ============ TOP BAR (refresh + cost pill + last updated) ============ */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; background: var(--bg-surface); border-radius: var(--r-5); border: 1px solid var(--border-default); }
+  .topbar-l { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .crumbs { display: flex; align-items: center; gap: 6px; font: 500 11px/1 var(--font-sans); color: var(--fg-muted); }
+  .crumbs .sep { color: var(--fg-disabled); }
+  .topbar-l h1 { margin: 0; font: 600 18px/1.2 var(--font-sans); color: var(--fg-primary); letter-spacing: -0.01em; }
+  .topbar-r { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .cost-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--r-pill); background: rgba(34,197,94,0.10); color: #4ADE80; font: 600 11px/1 var(--font-sans); border: 1px solid rgba(34,197,94,0.25); }
+  .cost-pill .price { font: 700 11px/1 var(--font-mono); }
+  .cost-pill .sep { width: 1px; height: 10px; background: rgba(74,222,128,0.35); }
+  .updated { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .updated .l1 { font: 500 11px/1 var(--font-mono); color: var(--fg-muted); }
+  .updated .l2 { font: 500 10px/1 var(--font-sans); color: var(--fg-faint); }
+  .updated .pulse { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--c-success); margin-right: 6px; box-shadow: 0 0 6px var(--c-success); animation: pulse 2.4s ease-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .btn-refresh { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--r-3); border: 0; background: linear-gradient(160deg,#8B5CF6,#5B2EC8); color: #fff; font: 600 12px/1 var(--font-sans); cursor: pointer; box-shadow: var(--sh-2); }
+  .btn-refresh:hover { filter: brightness(1.08); }
+  .btn-refresh:active { transform: translateY(1px); }
+  .btn-refresh.spin svg { animation: spin 0.6s linear; }
+  @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  /* ============ TOP STATS ============ */
+  .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .tile { border-radius: var(--r-5); padding: 12px 14px; min-height: 92px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--sh-2); position: relative; overflow: hidden; }
+  .tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.10), transparent 55%); pointer-events: none; }
+  .tile .row { display: flex; align-items: center; gap: 10px; }
+  .tile .ico { width: 30px; height: 30px; border-radius: var(--r-2); background: rgba(255,255,255,0.18); display: grid; place-items: center; flex-shrink: 0; }
+  .tile .ico svg { stroke: #fff; }
+  .tile .role { font: 600 10px/1 var(--font-sans); letter-spacing: 0.10em; text-transform: uppercase; opacity: 0.85; }
+  .tile .stat { font: 700 24px/1 var(--font-sans); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .tile .sub  { font: 500 11px/1.3 var(--font-sans); opacity: 0.85; }
+  .tile .src { position: absolute; top: 10px; right: 12px; font: 500 9px/1 var(--font-mono); opacity: 0.55; letter-spacing: 0.04em; }
+
+  /* ============ OFFICE ============ */
+  .office { background: var(--bg-surface); border-radius: var(--r-7); border: 1px solid var(--border-default); overflow: hidden; box-shadow: var(--sh-2); display: flex; flex-direction: column; }
+  .office-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-default); gap: 14px; }
+  .office-bar .l { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .office-bar .l h2 { margin: 0; font: 600 15px/1 var(--font-sans); color: var(--fg-primary); }
+  .office-bar .l .sub { font: 500 12px/1 var(--font-sans); color: var(--fg-muted); }
+  .office-bar .r { display: flex; align-items: center; gap: 6px; }
+  .pill-btn { padding: 7px 12px; border-radius: var(--r-pill); font: 500 12px/1 var(--font-sans); border: 0; background: var(--bg-surface-2); color: var(--fg-secondary); cursor: pointer; box-shadow: inset 0 0 0 1px var(--border-default); }
+  .pill-btn.on { background: var(--c-purple); color: #fff; box-shadow: var(--sh-2); }
+
+  /* Scene strip */
+  .scene { position: relative; background: #0a0e1a; height: 240px; flex-shrink: 0; }
+  .scene img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .scene::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 60px rgba(0,0,0,0.5); pointer-events: none; }
+  .scene-overlay { position: absolute; left: 14px; bottom: 12px; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--r-pill); background: rgba(14,20,36,0.7); backdrop-filter: blur(8px); font: 500 11px/1 var(--font-mono); color: var(--c-success); }
+  .scene-overlay .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-success); box-shadow: 0 0 6px var(--c-success); }
+  .scene-hint { position: absolute; right: 14px; bottom: 12px; padding: 6px 10px; border-radius: var(--r-pill); background: rgba(14,20,36,0.7); backdrop-filter: blur(8px); font: 500 11px/1 var(--font-sans); color: var(--fg-muted); }
+
+  /* Rooms grid (the canonical click surface — lightweight CSS rooms) */
+  .rooms-section { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .rooms-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+  .rooms-section-head .title { font: 600 11px/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); }
+  .rooms-section-head .filters { display: flex; gap: 4px; }
+  .filter-chip { padding: 4px 9px; border-radius: var(--r-pill); font: 600 10px/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; background: var(--bg-surface-2); color: var(--fg-muted); border: 1px solid var(--border-subtle); cursor: pointer; }
+  .filter-chip.on { background: var(--bg-surface-3); color: var(--fg-primary); border-color: var(--border-strong); }
+
+  .rooms-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .room { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--r-4); background: var(--bg-rail); border: 1px solid var(--border-subtle); text-decoration: none; cursor: pointer; transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease; min-height: 116px; overflow: hidden; }
+  .room::before { content: ""; position: absolute; top: 0; left: 0; bottom: 0; width: 3px; background: var(--c, var(--c-blue)); }
+  .room::after { content: ""; position: absolute; top: -40px; right: -40px; width: 110px; height: 110px; background: radial-gradient(circle at center, var(--c, var(--c-blue)) 0%, transparent 65%); opacity: 0.10; pointer-events: none; }
+  .room:hover { background: var(--bg-surface-2); border-color: var(--border-strong); transform: translateY(-1px); }
+  .room:hover::after { opacity: 0.18; }
+  .room.you { background: linear-gradient(140deg, rgba(139,92,246,0.18), rgba(59,130,246,0.10) 60%, var(--bg-rail)); border-color: rgba(139,92,246,0.35); }
+  .room.you::before { background: linear-gradient(180deg,#A78BFA,#8B5CF6); }
+  .room-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .room-avatar { width: 28px; height: 28px; border-radius: 5px; background: var(--c, var(--c-blue)); display: grid; place-items: center; font: 700 9px/1 var(--font-pixel); color: #fff; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.30); flex-shrink: 0; letter-spacing: 0.05em; }
+  .room-name { font: 600 13px/1.2 var(--font-sans); color: var(--fg-primary); }
+  .room-summary { font: 500 11px/1.4 var(--font-sans); color: var(--fg-muted); }
+  .room-arrow { position: absolute; right: 10px; bottom: 10px; color: var(--fg-faint); opacity: 0; transition: opacity 0.12s ease, transform 0.12s ease; }
+  .room:hover .room-arrow { opacity: 1; transform: translateX(2px); }
+
+  /* ============ RIGHT COLUMN ============ */
+  .right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .panel { background: var(--bg-surface); border-radius: var(--r-5); box-shadow: inset 0 0 0 1px var(--border-default); overflow: hidden; display: flex; flex-direction: column; }
+  .ph { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border-default); }
+  .ph-l { display: flex; align-items: center; gap: 8px; }
+  .ph-l .t { font: 600 13px/1 var(--font-sans); color: var(--fg-primary); }
+  .ph-r { color: var(--fg-faint); cursor: pointer; }
+  .row-i { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); }
+  .row-i:last-of-type { border: 0; }
+  .row-i .ico { width: 26px; height: 26px; border-radius: var(--r-2); display: grid; place-items: center; flex-shrink: 0; }
+  .ico-blue { background: rgba(59,130,246,0.15); color: var(--c-blue-2); }
+  .ico-purple { background: rgba(139,92,246,0.15); color: var(--c-purple-2); }
+  .ico-green { background: rgba(16,185,129,0.15); color: var(--c-green-2); }
+  .ico-orange { background: rgba(245,158,11,0.15); color: var(--c-orange-2); }
+  .ico-pink { background: rgba(236,72,153,0.15); color: var(--c-pink-2); }
+  .row-i .text { flex: 1; min-width: 0; }
+  .row-i .l1 { font: 500 13px/1.3 var(--font-sans); color: var(--fg-primary); }
+  .row-i .l2 { font: 500 11px/1.3 var(--font-sans); color: var(--fg-muted); margin-top: 2px; }
+  .ago { font: 500 11px/1 var(--font-mono); color: var(--fg-faint); flex-shrink: 0; }
+  .panel-footer { padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle); margin-top: auto; }
+  .poll-tag { display: inline-flex; align-items: center; gap: 6px; font: 500 10px/1 var(--font-mono); color: var(--fg-faint); letter-spacing: 0.04em; }
+  .poll-tag .d { width: 4px; height: 4px; border-radius: 50%; background: var(--c-success); box-shadow: 0 0 4px var(--c-success); }
+  .panel-link { font: 500 11px/1 var(--font-sans); color: var(--c-blue-2); cursor: pointer; text-decoration: none; }
+
+  .srow { display: grid; grid-template-columns: 70px 1fr; gap: 12px; padding: 9px 14px; border-bottom: 1px solid var(--border-subtle); align-items: baseline; }
+  .srow:last-of-type { border: 0; }
+  .time { font: 500 12px/1 var(--font-mono); color: var(--fg-muted); }
+  .ev   { font: 500 13px/1.3 var(--font-sans); color: var(--fg-primary); }
+  .ev.now  { color: var(--c-purple-2); }
+  .ev.now::before { content: "● "; }
+
+  /* Agent status panel — all 12 with mixed states */
+  .agents-list { display: flex; flex-direction: column; max-height: 360px; overflow-y: auto; }
+  .agents-list::-webkit-scrollbar { width: 6px; }
+  .agents-list::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+  .agent-row { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border-subtle); text-decoration: none; }
+  .agent-row:hover { background: var(--bg-surface-2); }
+  .agent-row:last-of-type { border: 0; }
+  .agent-row .av { width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3); display: grid; place-items: center; font: 700 7px/1 var(--font-pixel); color: #fff; }
+  .agent-row .nm { flex: 1; font: 500 12px/1.3 var(--font-sans); color: var(--fg-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ============ ANALYTICS ============ */
+  .analytics { background: var(--bg-surface); border-radius: var(--r-5); border: 1px solid var(--border-default); padding: 16px; }
+  .analytics-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .analytics-bar h3 { margin: 0; font: 600 11px/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); }
+  .analytics-bar .meta { display: flex; align-items: center; gap: 10px; font: 500 11px/1 var(--font-mono); color: var(--fg-faint); }
+  .charts-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .chart-card { background: var(--bg-rail); border-radius: var(--r-3); padding: 12px; box-shadow: inset 0 0 0 1px var(--border-subtle); min-height: 160px; }
+  .ch-h { font: 600 12px/1.2 var(--font-sans); color: var(--fg-primary); }
+  .ch-sub { font: 500 11px/1.3 var(--font-sans); color: var(--fg-muted); margin-top: 2px; }
+  .delta-up { color: var(--c-success); font: 500 11px/1 var(--font-sans); margin-left: 6px; }
+  .bars-mini { margin-top: 10px; height: 56px; display: flex; align-items: end; gap: 3px; }
+  .bars-mini span { flex: 1; border-radius: 1px 1px 0 0; }
+  .b-purple span { background: linear-gradient(180deg,var(--c-purple-2),var(--c-purple)); }
+  .days-mini { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-top: 4px; font: 500 9px/1 var(--font-mono); color: var(--fg-faint); text-align: center; }
+  .donut-mini, .ring-multi { display: grid; place-items: center; height: 92px; }
+  .small-line { height: 56px; margin-top: 8px; }
+  .small-line svg { width: 100%; height: 100%; display: block; }
+  .score-row { display: flex; align-items: center; gap: 4px; font: 500 11px/1 var(--font-sans); color: var(--c-success); margin-top: 6px; }
+
+  /* ============ TOAST ============ */
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); padding: 10px 16px; background: var(--bg-surface-3); color: var(--fg-primary); border-radius: var(--r-pill); font: 500 12px/1 var(--font-sans); box-shadow: var(--sh-3); border: 1px solid var(--border-strong); opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; z-index: 50; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast .ok { color: #4ADE80; margin-right: 6px; }
+</style>
+</head>
+<body data-screen-label="01 Office board">
+
+<!-- ============ RAIL ============ -->
+<aside class="rail">
+  <div class="head">
+    <div class="avatar">A\\</div>
+    <div class="head-meta">
+      <div class="who">Office</div>
+      <div class="role">You (CEO)</div>
+      <div class="status"><span class="dot"></span>Online</div>
+    </div>
+  </div>
+
+  <nav class="group">
+    <div class="group-title">Main Navigation</div>
+    <a class="item active" href="index.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 9-8 9 8v10a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>Office</a>
+    <a class="item" href="route.html#dashboard"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
+    <a class="item" href="route.html#email"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Email Center</a>
+    <a class="item" href="route.html#calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>Calendar</a>
+    <a class="item" href="route.html#tasks"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m9 12 2 2 4-4"/></svg>Tasks</a>
+    <a class="item" href="route.html#jobs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Job Search</a>
+    <a class="item" href="route.html#agents"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 19a4.5 4.5 0 0 1 7 0"/></svg>AI Agents</a>
+    <a class="item" href="route.html#projects"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</a>
+    <a class="item" href="route.html#knowledge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M4 16h15"/></svg>Knowledge Base</a>
+    <a class="item" href="route.html#analytics"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V10M9 20V4M15 20v-7M21 20v-4"/></svg>Analytics</a>
+    <a class="item" href="route.html#settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+  </nav>
+
+  <div class="group qa">
+    <div class="group-title">Quick Actions</div>
+    <a class="item b1" href="route.html#new-task"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New Task</a>
+    <a class="item b2" href="route.html#send-email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Send Email</a>
+    <a class="item b3" href="route.html#search-jobs"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search Jobs</a>
+    <a class="item b4" href="route.html#chat-ai"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11 7.4L3 21l1.6-7A8 8 0 1 1 21 12z"/></svg>Chat AI</a>
+  </div>
+
+  <div class="footer">
+    <div class="system">
+      <div class="label">AI System Status</div>
+      <div class="v1"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>All Systems Operational</div>
+      <div class="v2"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>10 of 12 agents online</div>
+      <div class="spark">
+        <span style="height:40%"></span><span style="height:65%"></span><span style="height:45%"></span><span style="height:80%"></span><span style="height:60%"></span><span style="height:90%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:75%"></span><span style="height:85%"></span><span style="height:50%"></span><span style="height:95%"></span>
+      </div>
+    </div>
+    <div class="dark-toggle">
+      <span style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Dark Mode</span>
+      <span>›</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar">
+  <div class="topbar-l">
+    <div class="crumbs"><span>Pixel Agents</span><span class="sep">›</span><span>Office board</span></div>
+    <h1>Office board</h1>
+  </div>
+  <div class="topbar-r">
+    <div class="cost-pill" title="The Office page makes zero AI calls on load — only cached data and lightweight status endpoints.">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+      <span>STATIC LOAD</span>
+      <span class="sep"></span>
+      <span class="price">$0.00 · 0 AI calls</span>
+    </div>
+    <div class="updated">
+      <div class="l1"><span class="pulse"></span><span id="agoText">Last updated 24s ago</span></div>
+      <div class="l2">Auto-refreshes every 60s</div>
+    </div>
+    <button class="btn-refresh" id="refreshBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 21v-5h5"/></svg>
+      Refresh
+    </button>
+  </div>
+</header>
+
+<!-- ============ TOP STATS ============ -->
+<section class="stats">
+  <div class="tile" style="background:linear-gradient(160deg,#3B82F6,#1E5BD0)">
+    <div class="src">cached · db</div>
+    <div class="row"><div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div><div><div class="role">Emails</div></div></div>
+    <div><div class="stat">156</div><div class="sub">12 high-priority</div></div>
+  </div>
+  <div class="tile" style="background:linear-gradient(160deg,#8B5CF6,#5B2EC8)">
+    <div class="src">cached · db</div>
+    <div class="row"><div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></div><div><div class="role">Calendar</div></div></div>
+    <div><div class="stat">9</div><div class="sub">Today's events</div></div>
+  </div>
+  <div class="tile" style="background:linear-gradient(160deg,#10B981,#0A7C5A)">
+    <div class="src">cached · db</div>
+    <div class="row"><div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m9 12 2 2 4-4"/></svg></div><div><div class="role">Tasks</div></div></div>
+    <div><div class="stat">34</div><div class="sub">Pending tasks</div></div>
+  </div>
+  <div class="tile" style="background:linear-gradient(160deg,#F59E0B,#B26E04)">
+    <div class="src">cached · db</div>
+    <div class="row"><div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></div><div><div class="role">Jobs</div></div></div>
+    <div><div class="stat">62</div><div class="sub">Saved applications</div></div>
+  </div>
+  <div class="tile" style="background:linear-gradient(160deg,#14B8A6,#0A7C73)">
+    <div class="src">poll · 10m</div>
+    <div class="row"><div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 18a5 5 0 0 0-1-9.9A7 7 0 1 0 4 14h11a3 3 0 0 1 0 6"/></svg></div><div><div class="role">API Cost</div></div></div>
+    <div><div class="stat">$18.64</div><div class="sub">This month · $50 cap</div></div>
+  </div>
+  <div class="tile" style="background:linear-gradient(160deg,#EC4899,#B12973)">
+    <div class="src">poll · 60s</div>
+    <div class="row"><div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 19a4.5 4.5 0 0 1 7 0"/></svg></div><div><div class="role">Agents</div></div></div>
+    <div><div class="stat">10/12</div><div class="sub">Active now</div></div>
+  </div>
+</section>
+
+<!-- ============ OFFICE ============ -->
+<section class="office">
+  <div class="office-bar">
+    <div class="l">
+      <h2>The Office</h2>
+      <span class="sub">12 rooms · click to open</span>
+    </div>
+    <div class="r">
+      <button class="pill-btn on">Office view</button>
+      <button class="pill-btn">Dashboard view</button>
+      <button class="pill-btn" aria-label="Expand"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v4a1 1 0 0 0 1 1h3"/><path d="M21 17v-4a1 1 0 0 0-1-1h-3"/><path d="M3 21h18M3 3h18"/></svg></button>
+    </div>
+  </div>
+
+  <div class="scene">
+    <img src="../../assets/imagery/office-scene.png" class="pixelated" alt="Pixel art office with AI agents at desks">
+    <div class="scene-overlay"><span class="dot"></span>LIVE · 10 OF 12 ACTIVE</div>
+    <div class="scene-hint">↓ rooms below — click any to open</div>
+  </div>
+
+  <div class="rooms-section">
+    <div class="rooms-section-head">
+      <div class="title">Agent rooms</div>
+      <div class="filters" role="group" aria-label="Filter by status">
+        <button class="filter-chip on" data-filter="all">All · 12</button>
+        <button class="filter-chip" data-filter="needs-action">Needs you · 3</button>
+        <button class="filter-chip" data-filter="online">Online · 5</button>
+        <button class="filter-chip" data-filter="other">Other · 4</button>
+      </div>
+    </div>
+
+    <div class="rooms-grid">
+      <!-- Row 1 -->
+      <a class="room you" href="route.html#you" style="--c:#A78BFA" data-status="online">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#A78BFA,#5B2EC8)">YOU</div>
+          <span class="badge badge-online">Active</span>
+        </div>
+        <div>
+          <div class="room-name">CEO Office — You</div>
+          <div class="room-summary">5 events · 34 tasks today</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="route.html#email" style="--c:#3B82F6" data-status="needs-action">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#60A5FA,#1E5BD0)">EM</div>
+          <span class="badge badge-review">Needs Review</span>
+        </div>
+        <div>
+          <div class="room-name">Email Manager</div>
+          <div class="room-summary">12 high-priority emails</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="route.html#calendar" style="--c:#8B5CF6" data-status="online">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#A78BFA,#5B2EC8)">CM</div>
+          <span class="badge badge-online">Online</span>
+        </div>
+        <div>
+          <div class="room-name">Calendar Manager</div>
+          <div class="room-summary">9 events today</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="route.html#tasks" style="--c:#10B981" data-status="online">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#34D399,#0A7C5A)">TC</div>
+          <span class="badge badge-online">Online</span>
+        </div>
+        <div>
+          <div class="room-name">Task Coordinator</div>
+          <div class="room-summary">34 pending tasks</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <!-- Row 2 -->
+      <a class="room" href="route.html#jobs" style="--c:#F59E0B" data-status="other">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#FBBF24,#B26E04)">JS</div>
+          <span class="badge badge-idle">Idle</span>
+        </div>
+        <div>
+          <div class="room-name">Job Search Agent</div>
+          <div class="room-summary">62 saved applications</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="route.html#hr" style="--c:#EC4899" data-status="needs-action">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#F472B6,#B12973)">HR</div>
+          <span class="badge badge-approval">Waiting Approval</span>
+        </div>
+        <div>
+          <div class="room-name">HR &amp; I-9 Specialist</div>
+          <div class="room-summary">3 docs need signature</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="route.html#knowledge" style="--c:#14B8A6" data-status="other">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#2DD4BF,#0A7C73)">KM</div>
+          <span class="badge badge-completed">Completed</span>
+        </div>
+        <div>
+          <div class="room-name">Knowledge Manager</div>
+          <div class="room-summary">Daily index sync · 248 docs</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="route.html#projects" style="--c:#3B82F6" data-status="online">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#60A5FA,#1E5BD0)">PM</div>
+          <span class="badge badge-online">Online</span>
+        </div>
+        <div>
+          <div class="room-name">Project Manager</div>
+          <div class="room-summary">7 active projects</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <!-- Row 3 -->
+      <a class="room" href="route.html#automations" style="--c:#8B5CF6" data-status="other">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#A78BFA,#5B2EC8)">AE</div>
+          <span class="badge badge-idle">Idle</span>
+        </div>
+        <div>
+          <div class="room-name">Automation Engineer</div>
+          <div class="room-summary">14 flows running</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="route.html#security" style="--c:#10B981" data-status="online">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#34D399,#0A7C5A)">SG</div>
+          <span class="badge badge-online">Online</span>
+        </div>
+        <div>
+          <div class="room-name">Security Guardian</div>
+          <div class="room-summary">0 alerts in 24h</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="route.html#analytics-agent" style="--c:#EF4444" data-status="other">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#F87171,#B91C1C)">DA</div>
+          <span class="badge badge-error">Error</span>
+        </div>
+        <div>
+          <div class="room-name">Data Analyst</div>
+          <div class="room-summary">Sync failed · 3:42 AM</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+
+      <a class="room" href="agents/gmail-calendar.html" style="--c:#8B5CF6" data-status="needs-action">
+        <div class="room-head">
+          <div class="room-avatar" style="background:linear-gradient(160deg,#A78BFA,#3B82F6)">G&amp;C</div>
+          <span class="badge badge-approval">Waiting Approval</span>
+        </div>
+        <div>
+          <div class="room-name">Gmail &amp; Calendar Agent</div>
+          <div class="room-summary">2 invite conflicts found</div>
+        </div>
+        <svg class="room-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RIGHT COLUMN ============ -->
+<aside class="right">
+  <!-- Activity feed (poll 30s) -->
+  <div class="panel">
+    <div class="ph"><div class="ph-l"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--c-success)"><circle cx="12" cy="12" r="6"/></svg><div class="t">Real-time activity</div></div><div class="ph-r">▾</div></div>
+    <div class="row-i"><div class="ico ico-blue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div><div class="text"><div class="l1">Email processed</div><div class="l2">auto-categorized 6 items</div></div><div class="ago">2m</div></div>
+    <div class="row-i"><div class="ico ico-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></div><div class="text"><div class="l1">Calendar event created</div><div class="l2">"Project Review" · 10:30 AM</div></div><div class="ago">5m</div></div>
+    <div class="row-i"><div class="ico ico-orange"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></div><div class="text"><div class="l1">Job application saved</div><div class="l2">Senior PM · Kestrel Labs</div></div><div class="ago">7m</div></div>
+    <div class="row-i"><div class="ico ico-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m9 12 2 2 4-4"/></svg></div><div class="text"><div class="l1">Task completed</div><div class="l2">"Update SOC2 evidence"</div></div><div class="ago">11m</div></div>
+    <div class="row-i"><div class="ico ico-pink"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="text"><div class="l1">Report generated</div><div class="l2">weekly summary</div></div><div class="ago">14m</div></div>
+    <div class="panel-footer">
+      <span class="poll-tag"><span class="d"></span>polls every 30s</span>
+      <a class="panel-link" href="route.html#activity">View all →</a>
+    </div>
+  </div>
+
+  <!-- Today's schedule (poll 5m) -->
+  <div class="panel">
+    <div class="ph"><div class="ph-l"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--c-purple-2)" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg><div class="t">Today's schedule</div></div><div class="ph-r">▾</div></div>
+    <div class="srow"><div class="time">9:00 AM</div><div class="ev">Team Standup</div></div>
+    <div class="srow"><div class="time">10:30 AM</div><div class="ev now">Project Review</div></div>
+    <div class="srow"><div class="time">1:00 PM</div><div class="ev">Client Call</div></div>
+    <div class="srow"><div class="time">2:30 PM</div><div class="ev">Job Search Review</div></div>
+    <div class="srow"><div class="time">4:00 PM</div><div class="ev">Automation Check-in</div></div>
+    <div class="panel-footer">
+      <span class="poll-tag"><span class="d"></span>polls every 5m</span>
+      <a class="panel-link" href="route.html#calendar">Full calendar →</a>
+    </div>
+  </div>
+
+  <!-- Agent status (poll 60s) — all 12 -->
+  <div class="panel">
+    <div class="ph"><div class="ph-l"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--fg-secondary)"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 19a4.5 4.5 0 0 1 7 0"/></svg><div class="t">Agent status · 12</div></div><div class="ph-r">▾</div></div>
+    <div class="agents-list">
+      <a class="agent-row" href="route.html#you"><div class="av" style="background:linear-gradient(160deg,#A78BFA,#5B2EC8)">YO</div><div class="nm">CEO Office (You)</div><span class="badge badge-online">Online</span></a>
+      <a class="agent-row" href="route.html#email"><div class="av" style="background:linear-gradient(160deg,#60A5FA,#1E5BD0)">EM</div><div class="nm">Email Manager</div><span class="badge badge-review">Review</span></a>
+      <a class="agent-row" href="route.html#calendar"><div class="av" style="background:linear-gradient(160deg,#A78BFA,#5B2EC8)">CM</div><div class="nm">Calendar Manager</div><span class="badge badge-online">Online</span></a>
+      <a class="agent-row" href="route.html#tasks"><div class="av" style="background:linear-gradient(160deg,#34D399,#0A7C5A)">TC</div><div class="nm">Task Coordinator</div><span class="badge badge-online">Online</span></a>
+      <a class="agent-row" href="route.html#jobs"><div class="av" style="background:linear-gradient(160deg,#FBBF24,#B26E04)">JS</div><div class="nm">Job Search Agent</div><span class="badge badge-idle">Idle</span></a>
+      <a class="agent-row" href="route.html#hr"><div class="av" style="background:linear-gradient(160deg,#F472B6,#B12973)">HR</div><div class="nm">HR &amp; I-9 Specialist</div><span class="badge badge-approval">Approval</span></a>
+      <a class="agent-row" href="route.html#knowledge"><div class="av" style="background:linear-gradient(160deg,#2DD4BF,#0A7C73)">KM</div><div class="nm">Knowledge Manager</div><span class="badge badge-completed">Done</span></a>
+      <a class="agent-row" href="route.html#projects"><div class="av" style="background:linear-gradient(160deg,#60A5FA,#1E5BD0)">PM</div><div class="nm">Project Manager</div><span class="badge badge-online">Online</span></a>
+      <a class="agent-row" href="route.html#automations"><div class="av" style="background:linear-gradient(160deg,#A78BFA,#5B2EC8)">AE</div><div class="nm">Automation Engineer</div><span class="badge badge-idle">Idle</span></a>
+      <a class="agent-row" href="route.html#security"><div class="av" style="background:linear-gradient(160deg,#34D399,#0A7C5A)">SG</div><div class="nm">Security Guardian</div><span class="badge badge-online">Online</span></a>
+      <a class="agent-row" href="route.html#analytics-agent"><div class="av" style="background:linear-gradient(160deg,#F87171,#B91C1C)">DA</div><div class="nm">Data Analyst</div><span class="badge badge-error">Error</span></a>
+      <a class="agent-row" href="agents/gmail-calendar.html"><div class="av" style="background:linear-gradient(160deg,#A78BFA,#3B82F6)">G&amp;</div><div class="nm">Gmail &amp; Calendar</div><span class="badge badge-approval">Approval</span></a>
+    </div>
+    <div class="panel-footer">
+      <span class="poll-tag"><span class="d"></span>polls every 60s</span>
+      <a class="panel-link" href="route.html#agents">All agents →</a>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ ANALYTICS ============ -->
+<section class="analytics">
+  <div class="analytics-bar">
+    <h3>Analytics Dashboard</h3>
+    <div class="meta"><span>cached · last refresh 2m ago</span><span>⤢</span></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="ch-h">Email Volume</div>
+      <div class="ch-sub">Last 7 days <span class="delta-up">+24%</span></div>
+      <div class="bars-mini b-purple">
+        <span style="height:35%"></span><span style="height:55%"></span><span style="height:42%"></span><span style="height:78%"></span><span style="height:64%"></span><span style="height:88%"></span><span style="height:48%"></span>
+      </div>
+      <div class="days-mini"><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span><span>Mon</span><span>Tue</span></div>
+    </div>
+    <div class="chart-card">
+      <div class="ch-h">Task Completion</div>
+      <div class="ch-sub">This week</div>
+      <div class="donut-mini"><svg width="92" height="92" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#2B3650" stroke-width="11"/>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#10B981" stroke-width="11" stroke-dasharray="251" stroke-dashoffset="45" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+        <text x="50" y="55" text-anchor="middle" font-family="Inter" font-weight="700" font-size="18" fill="#F1F4FB">82%</text>
+      </svg></div>
+    </div>
+    <div class="chart-card">
+      <div class="ch-h">Job Applications</div>
+      <div class="ch-sub">This month <span class="delta-up">62</span></div>
+      <div class="small-line"><svg viewBox="0 0 200 60" preserveAspectRatio="none">
+        <defs><linearGradient id="lg2" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#F59E0B" stop-opacity="0.40"/><stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/></linearGradient></defs>
+        <path d="M0 50 L25 38 L50 42 L75 28 L100 32 L125 18 L150 24 L175 14 L200 10 L200 60 L0 60 Z" fill="url(#lg2)"/>
+        <path d="M0 50 L25 38 L50 42 L75 28 L100 32 L125 18 L150 24 L175 14 L200 10" fill="none" stroke="#F59E0B" stroke-width="2"/>
+      </svg></div>
+      <div class="days-mini" style="margin-top:8px"><span>May 1</span><span>May 8</span><span>May 15</span><span>May 22</span><span>May 29</span></div>
+    </div>
+    <div class="chart-card">
+      <div class="ch-h">API Usage</div>
+      <div class="ch-sub">This month</div>
+      <div class="ring-multi"><svg width="92" height="92" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#2B3650" stroke-width="6"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#3B82F6" stroke-width="6" stroke-dasharray="264" stroke-dashoffset="100" transform="rotate(-90 50 50)"/>
+        <circle cx="50" cy="50" r="34" fill="none" stroke="#8B5CF6" stroke-width="6" stroke-dasharray="214" stroke-dashoffset="80" transform="rotate(-90 50 50)"/>
+        <circle cx="50" cy="50" r="26" fill="none" stroke="#EC4899" stroke-width="6" stroke-dasharray="164" stroke-dashoffset="50" transform="rotate(-90 50 50)"/>
+        <text x="50" y="50" text-anchor="middle" font-family="Inter" font-weight="700" font-size="18" fill="#F1F4FB">68%</text>
+        <text x="50" y="64" text-anchor="middle" font-family="Inter" font-weight="500" font-size="9" fill="#8693B0">of limit</text>
+      </svg></div>
+    </div>
+    <div class="chart-card">
+      <div class="ch-h">Productivity Score</div>
+      <div class="ch-sub">Today</div>
+      <div class="ring-multi"><svg width="92" height="92" viewBox="0 0 100 100">
+        <defs><linearGradient id="rg" x1="0" x2="1"><stop offset="0%" stop-color="#10B981"/><stop offset="50%" stop-color="#F59E0B"/><stop offset="100%" stop-color="#EC4899"/></linearGradient></defs>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#2B3650" stroke-width="8"/>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="url(#rg)" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="15" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+        <text x="50" y="48" text-anchor="middle" font-family="Inter" font-weight="700" font-size="20" fill="#F1F4FB">94</text>
+        <text x="50" y="62" text-anchor="middle" font-family="Inter" font-weight="500" font-size="8" fill="#8693B0">/ 100</text>
+      </svg></div>
+      <div class="score-row" style="justify-content:center">★ Excellent</div>
+    </div>
+    <div class="chart-card">
+      <div class="ch-h">Time Management</div>
+      <div class="ch-sub">This week</div>
+      <div class="donut-mini"><svg width="92" height="92" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#2B3650" stroke-width="11"/>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#14B8A6" stroke-width="11" stroke-dasharray="251" stroke-dashoffset="30" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+        <text x="50" y="55" text-anchor="middle" font-family="Inter" font-weight="700" font-size="18" fill="#F1F4FB">88%</text>
+      </svg></div>
+      <div class="score-row" style="justify-content:center;color:var(--c-teal-2)">⏱ Focused Time</div>
+    </div>
+  </div>
+</section>
+
+<!-- Toast for refresh feedback -->
+<div class="toast" id="toast"><span class="ok">✓</span><span id="toastText">Refreshed</span></div>
+
+<script>
+  // === Last-updated ticker (purely visual; no AI calls) ===
+  let lastUpdate = Date.now() - 24000;
+  const agoText = document.getElementById('agoText');
+  function fmtAgo(ms) {
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return 'Last updated ' + s + 's ago';
+    const m = Math.floor(s / 60);
+    return 'Last updated ' + m + 'm ago';
+  }
+  function tick() { agoText.textContent = fmtAgo(Date.now() - lastUpdate); }
+  setInterval(tick, 1000);
+  tick();
+
+  // === Refresh button — fakes a 0-cost status poll ===
+  const refreshBtn = document.getElementById('refreshBtn');
+  const toast = document.getElementById('toast');
+  const toastText = document.getElementById('toastText');
+  function showToast(msg) {
+    toastText.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+  refreshBtn.addEventListener('click', () => {
+    refreshBtn.classList.add('spin');
+    setTimeout(() => refreshBtn.classList.remove('spin'), 600);
+    lastUpdate = Date.now();
+    tick();
+    showToast('Refreshed · 0 AI calls · cached + status endpoints only');
+  });
+
+  // === Filter chips ===
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      const f = chip.dataset.filter;
+      document.querySelectorAll('.room').forEach(r => {
+        const s = r.dataset.status;
+        r.style.display = (f === 'all' || s === f) ? '' : 'none';
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

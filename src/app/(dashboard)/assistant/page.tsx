@@ -57,33 +57,39 @@ export default function AssistantPage() {
   ]
 
   return (
-    <div className="flex flex-col h-full max-w-3xl mx-auto p-6">
-      <h1 className="text-xl font-bold mb-1 flex-shrink-0" style={{ color: 'var(--foreground)' }}>🤖 AI Assistant</h1>
-      <p className="text-sm mb-4 flex-shrink-0" style={{ color: 'var(--muted)' }}>Powered by OpenAI. Actions require your approval before execution.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '780px', margin: '0 auto', padding: '20px' }}>
+      {/* Topbar */}
+      <div className="pg-topbar" style={{ flexShrink: 0, marginBottom: '16px' }}>
+        <div className="pg-topbar-l">
+          <h1>🤖 AI Assistant</h1>
+          <p style={{ margin: 0, font: '400 12px/1 var(--font-sans)', color: 'var(--fg-muted)' }}>Actions require your approval before execution.</p>
+        </div>
+        <div className="pg-topbar-r">
+          <span className="badge badge-online">online</span>
+        </div>
+      </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin space-y-3 mb-4 min-h-0 rounded-xl p-4"
-           style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', marginBottom: '12px', minHeight: 0, background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--r-5)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className="max-w-[80%] px-4 py-3 rounded-xl text-sm"
-              style={{
-                background: msg.role === 'user' ? 'var(--primary)' : 'var(--card-hover)',
-                color: 'var(--foreground)',
-                borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                lineHeight: '1.6',
-                whiteSpace: 'pre-wrap',
-              }}
-            >
+          <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div style={{
+              maxWidth: '80%', padding: '10px 14px',
+              background: msg.role === 'user' ? 'var(--c-blue)' : 'var(--bg-surface-2)',
+              color: 'var(--fg-primary)',
+              borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+              font: '400 13px/1.65 var(--font-sans)',
+              whiteSpace: 'pre-wrap',
+              border: msg.role === 'user' ? 'none' : '1px solid var(--border-subtle)',
+            }}>
               {msg.content}
             </div>
           </div>
         ))}
         {loading && (
-          <div className="flex justify-start">
-            <div className="px-4 py-3 rounded-xl text-sm" style={{ background: 'var(--card-hover)' }}>
-              <span className="animate-pulse" style={{ color: 'var(--muted)' }}>Thinking...</span>
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ padding: '10px 14px', background: 'var(--bg-surface-2)', borderRadius: '14px 14px 14px 4px', border: '1px solid var(--border-subtle)' }}>
+              <span style={{ font: '400 13px/1 var(--font-mono)', color: 'var(--fg-muted)' }}>thinking...</span>
             </div>
           </div>
         )}
@@ -91,13 +97,13 @@ export default function AssistantPage() {
       </div>
 
       {/* Quick prompts */}
-      <div className="flex gap-2 mb-3 flex-wrap flex-shrink-0">
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap', flexShrink: 0 }}>
         {quickPrompts.map(p => (
           <button
             key={p}
             onClick={() => { setInput(p); }}
-            className="text-xs px-3 py-1.5 rounded-full transition-all"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}
+            className="btn-ghost"
+            style={{ fontSize: '11px', padding: '5px 10px' }}
           >
             {p}
           </button>
@@ -105,20 +111,19 @@ export default function AssistantPage() {
       </div>
 
       {/* Input */}
-      <div className="flex gap-3 flex-shrink-0">
+      <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
           placeholder="Ask anything about your emails, tasks, or calendar..."
-          className="flex-1 px-4 py-3 rounded-xl text-sm outline-none"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+          style={{ flex: 1, padding: '10px 14px', borderRadius: 'var(--r-3)', background: 'var(--bg-surface)', border: '1px solid var(--border-default)', color: 'var(--fg-primary)', font: '400 13px/1 var(--font-sans)', outline: 'none' }}
         />
         <button
           onClick={send}
           disabled={loading || !input.trim()}
-          className="px-4 py-3 rounded-xl font-medium transition-all disabled:opacity-50"
-          style={{ background: 'var(--primary)', color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}
+          className="btn-primary"
+          style={{ opacity: (loading || !input.trim()) ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
         >
           Send
         </button>

@@ -17,6 +17,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    signIn({ user }) {
+      const allowedUsersStr = process.env.ALLOWED_USERS
+      // If ALLOWED_USERS is defined, strictly enforce it
+      if (allowedUsersStr && user.email) {
+        const allowedUsers = allowedUsersStr.split(',').map(e => e.trim().toLowerCase())
+        return allowedUsers.includes(user.email.toLowerCase())
+      }
+      return true
+    },
     session({ session, user }) {
       if (session.user) {
         session.user.id = user.id

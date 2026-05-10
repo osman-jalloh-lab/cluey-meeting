@@ -8,16 +8,15 @@ export default async function LoginPage() {
   if (session) redirect('/dashboard')
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
-      <div className="w-full max-w-md p-8" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)' }}>
+      <div style={{ width: '100%', maxWidth: '400px', padding: '40px', background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--r-5)', boxShadow: 'var(--sh-3)' }}>
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-            <span className="text-2xl">⚡</span>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: 'var(--r-4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', background: 'linear-gradient(135deg, var(--c-blue), var(--c-purple))' }}>
+            <span style={{ fontSize: '24px' }}>⚡</span>
           </div>
-          <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--foreground)' }}>Yash&apos;s Command Centre</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Personal AI Command Centre</p>
+          <h1 style={{ margin: '0 0 6px', font: '700 22px/1.2 var(--font-sans)', color: 'var(--fg-primary)', letterSpacing: '-0.02em' }}>PARAWI</h1>
+          <p style={{ margin: 0, font: '400 13px/1 var(--font-sans)', color: 'var(--fg-muted)' }}>Command Centre — sign in to continue</p>
         </div>
 
         {/* Google Sign in */}
@@ -27,14 +26,14 @@ export default async function LoginPage() {
         }}>
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium transition-all"
             style={{
-              background: 'white',
-              color: '#1a1a1a',
-              fontSize: '15px',
-              cursor: 'pointer',
-              border: 'none',
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              padding: '11px 16px', borderRadius: 'var(--r-3)', border: '1px solid var(--border-default)',
+              background: 'var(--bg-surface-2)', color: 'var(--fg-primary)',
+              font: '600 13px/1 var(--font-sans)', cursor: 'pointer', transition: 'filter 0.15s',
             }}
+            onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.1)')}
+            onMouseLeave={e => (e.currentTarget.style.filter = 'brightness(1)')}
           >
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -47,12 +46,12 @@ export default async function LoginPage() {
         </form>
 
         {/* Dev login bypass */}
-        <div className="mt-4">
+        <div style={{ marginTop: '12px' }}>
           <DevLoginButton />
         </div>
 
-        <p className="text-center mt-6" style={{ color: 'var(--muted)', fontSize: '12px' }}>
-          Your data stays private. AI suggestions require your approval before any action is taken.
+        <p style={{ textAlign: 'center', marginTop: '24px', font: '400 11px/1.5 var(--font-sans)', color: 'var(--fg-faint)' }}>
+          Your data stays private. AI suggestions require your approval.
         </p>
       </div>
     </div>

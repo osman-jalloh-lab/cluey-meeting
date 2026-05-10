@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Route stub — Pixel Agents</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  body { display: grid; place-items: center; min-height: 100vh; padding: 40px; }
+  .stub { max-width: 560px; width: 100%; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r-7); padding: 36px 36px 28px; box-shadow: var(--sh-3); position: relative; overflow: hidden; }
+  .stub::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg,#3B82F6,#8B5CF6,#EC4899); }
+  .crumbs { display: flex; align-items: center; gap: 6px; font: 500 11px/1 var(--font-sans); color: var(--fg-muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--c-blue-2); text-decoration: none; }
+  .crumbs .sep { color: var(--fg-disabled); }
+  h1 { margin: 0 0 6px; font: 600 28px/1.1 var(--font-sans); letter-spacing: -0.01em; color: var(--fg-primary); }
+  .route-id { font: 500 13px/1.4 var(--font-mono); color: var(--c-blue-2); margin-bottom: 22px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+  .meta { background: var(--bg-rail); border-radius: var(--r-3); padding: 12px 14px; border: 1px solid var(--border-subtle); }
+  .meta .l { font: 600 10px/1 var(--font-sans); letter-spacing: 0.10em; text-transform: uppercase; color: var(--fg-faint); margin-bottom: 6px; }
+  .meta .v { font: 600 14px/1.3 var(--font-sans); color: var(--fg-primary); }
+  .meta .v.green { color: #4ADE80; }
+  .meta .v.muted { color: var(--fg-secondary); font-weight: 500; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px 3px 7px; border-radius: var(--r-pill); font: 600 10px/1.4 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; background: rgba(245,158,11,0.16); color: #FBBF24; }
+  .badge::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #F59E0B; box-shadow: 0 0 6px #F59E0B; }
+  .copy { font: 400 14px/1.6 var(--font-sans); color: var(--fg-secondary); margin: 0 0 22px; }
+  .copy strong { color: var(--fg-primary); font-weight: 600; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--r-3); font: 600 13px/1 var(--font-sans); border: 0; cursor: pointer; text-decoration: none; }
+  .btn-primary { background: linear-gradient(160deg,#8B5CF6,#5B2EC8); color: #fff; }
+  .btn-secondary { background: var(--bg-surface-2); color: var(--fg-primary); box-shadow: inset 0 0 0 1px var(--border-default); }
+  .btn:hover { filter: brightness(1.08); }
+  .footnote { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border-subtle); font: 500 11px/1.5 var(--font-mono); color: var(--fg-faint); }
+  .footnote span.cost { color: #4ADE80; }
+</style>
+</head>
+<body>
+  <div class="stub">
+    <div class="crumbs"><a href="index.html">Office board</a><span class="sep">›</span><span id="crumbRoute">Route</span></div>
+    <h1 id="routeTitle">Route</h1>
+    <div class="route-id" id="routePath">/</div>
+
+    <div class="grid">
+      <div class="meta">
+        <div class="l">Status</div>
+        <div class="v"><span class="badge">Coming Soon</span></div>
+      </div>
+      <div class="meta">
+        <div class="l">Load Cost</div>
+        <div class="v green">$0.00 · 0 AI calls</div>
+      </div>
+      <div class="meta">
+        <div class="l">Data source</div>
+        <div class="v muted">cached · database</div>
+      </div>
+      <div class="meta">
+        <div class="l">Polling</div>
+        <div class="v muted">none on this page</div>
+      </div>
+    </div>
+
+    <p class="copy">
+      This route is part of the Office board scaffold. Click <strong>Office</strong> on the board and the
+      app navigates here without firing any AI provider call. Build out the page using mock data first,
+      then connect database values, then wire <em>manual</em> AI action buttons.
+    </p>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="index.html">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Office
+      </a>
+      <a class="btn btn-secondary" href="agents/gmail-calendar.html">
+        See a built example →
+      </a>
+    </div>
+
+    <div class="footnote">
+      Performance contract · shell &lt; 1s · cached data &lt; 2s · <span class="cost">$0 on initial load</span>
+    </div>
+  </div>
+
+<script>
+  const routes = {
+    'dashboard':       { title: 'Dashboard',         path: '/dashboard' },
+    'email':           { title: 'Email Center',       path: '/email' },
+    'calendar':        { title: 'Calendar',           path: '/calendar' },
+    'tasks':           { title: 'Tasks',              path: '/tasks' },
+    'jobs':            { title: 'Job Search',         path: '/jobs' },
+    'agents':          { title: 'AI Agents',          path: '/agents' },
+    'projects':        { title: 'Projects',           path: '/projects' },
+    'knowledge':       { title: 'Knowledge Base',     path: '/knowledge' },
+    'analytics':       { title: 'Analytics',          path: '/analytics' },
+    'settings':        { title: 'Settings',           path: '/settings' },
+    'hr':              { title: 'HR & I-9',           path: '/hr' },
+    'security':        { title: 'Security & Safety',  path: '/security' },
+    'automations':     { title: 'Automations',        path: '/automations' },
+    'analytics-agent': { title: 'Data Analyst',       path: '/agents/data-analyst' },
+    'you':             { title: 'CEO Office — You',   path: '/you' },
+    'new-task':        { title: 'New Task',           path: '/tasks/new' },
+    'send-email':      { title: 'Send Email',         path: '/email/compose' },
+    'search-jobs':     { title: 'Search Jobs',        path: '/jobs/search' },
+    'chat-ai':         { title: 'Chat AI',            path: '/chat' },
+    'activity':        { title: 'Activity Feed',      path: '/activity' }
+  };
+  const k = (location.hash || '').replace('#', '') || 'dashboard';
+  const r = routes[k] || { title: k.replace(/-/g, ' '), path: '/' + k };
+  document.getElementById('routeTitle').textContent = r.title;
+  document.getElementById('crumbRoute').textContent = r.title;
+  document.getElementById('routePath').textContent = r.path;
+  document.title = r.title + ' — Pixel Agents';
+</script>
+</body>
+</html>

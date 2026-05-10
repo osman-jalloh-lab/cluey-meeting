@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import './pixel-agents.css'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -16,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Yash's Command Centre",
+  title: "PARAWI — Command Centre",
   description: 'Your private AI-powered command centre for email, calendar, tasks, and notes.',
 }
 
