@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { formatRelativeTime } from '@/lib/utils'
 
 interface JobLead {
@@ -191,8 +192,17 @@ export default function RecommendedJobs() {
       </div>
 
       {/* Add lead inline form */}
+      <AnimatePresence initial={false}>
       {addingLead && (
-        <div className="mb-3 p-3 rounded-xl flex gap-2 items-end" style={{ background: 'var(--background)', border: '1px solid var(--border)' }}>
+        <motion.div
+          key="add-lead-form"
+          className="mb-3 p-3 rounded-xl flex gap-2 items-end"
+          style={{ background: 'var(--background)', border: '1px solid var(--border)', overflow: 'hidden' }}
+          initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+          animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
+          exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="flex-1">
             <input
               value={newTitle}
@@ -227,8 +237,9 @@ export default function RecommendedJobs() {
               Cancel
             </button>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Job list */}
       <div className="space-y-2" style={{ maxHeight: '420px', overflowY: 'auto' }}>

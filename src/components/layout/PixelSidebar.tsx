@@ -2,148 +2,137 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface UserProps {
   name?: string | null
   email?: string | null
-  image?: string | null
 }
+
+const DEPARTMENTS = [
+  { id: 'office',   label: 'Office',    href: '/dashboard', color: 'var(--c-purple)', icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
+  )},
+  { id: 'inbox',    label: 'Inbox',     href: '/email',     color: 'var(--c-blue)',   urgent: true, icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></svg>
+  )},
+  { id: 'calendar', label: 'Calendar',  href: '/calendar',  color: 'var(--c-purple)', icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+  )},
+  { id: 'tasks',    label: 'Tasks',     href: '/tasks',     color: 'var(--c-green)',  icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+  )},
+  { id: 'career',   label: 'Career',    href: '/jobs',      color: 'var(--c-orange)', icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+  )},
+  { id: 'school',   label: 'School',    href: '/notes',     color: 'var(--c-cyan)',   icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11v5a8 8 0 0 0 12 0v-5"/></svg>
+  )},
+  { id: 'hr',       label: 'Work & HR', href: '/assistant', color: 'var(--c-teal)',   icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/></svg>
+  )},
+]
+
+const AGENTS = [
+  { id: 'CH', name: 'Chief', role: 'routing',           color: 'var(--c-purple)', status: 'active' },
+  { id: 'ZR', name: 'Zara',  role: 'scanning inbox',    color: 'var(--c-blue)',   status: 'active' },
+  { id: 'RX', name: 'Rex',   role: '4 tasks queued',    color: 'var(--c-green)',  status: 'active' },
+  { id: 'LX', name: 'Lex',   role: 'HR · I-9 watch',   color: 'var(--c-teal)',   status: 'active' },
+  { id: 'NV', name: 'Nova',  role: '3 recruiters open', color: 'var(--c-orange)', status: 'active' },
+  { id: 'CL', name: 'Cal',   role: '2 conflicts found', color: 'var(--c-purple)', status: 'warn'   },
+  { id: 'SC', name: 'Scout', role: 'watching academic', color: 'var(--c-cyan)',   status: 'active' },
+  { id: 'DR', name: 'Draft', role: '2 replies ready',   color: 'var(--c-blue)',   status: 'active' },
+]
 
 export default function PixelSidebar({ user }: { user: UserProps }) {
   const pathname = usePathname()
-  const integrationsRoutes = ['/email', '/calendar', '/jobs', '/accounts', '/notes']
-  const [integrationsOpen, setIntegrationsOpen] = useState(
-    integrationsRoutes.some(p => pathname.startsWith(p))
-  )
+  const [ollamaOnline, setOllamaOnline] = useState<boolean | null>(null)
+  const [todayCost, setTodayCost] = useState<string>('…')
 
-  const initials = user.name
-    ? user.name.split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()
-    : 'YOU'
+  useEffect(() => {
+    fetch('/api/ai/ollama')
+      .then(r => r.json())
+      .then(d => setOllamaOnline(d.available === true))
+      .catch(() => setOllamaOnline(false))
 
-  const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/')
-  const integrationsActive = integrationsRoutes.some(p => pathname.startsWith(p))
+    fetch('/api/settings/usage')
+      .then(r => r.json())
+      .then(d => {
+        if (d.todayCost !== undefined) setTodayCost(`$${Number(d.todayCost).toFixed(2)}`)
+        else if (d.totalCost !== undefined) setTodayCost(`$${Number(d.totalCost).toFixed(2)}`)
+      })
+      .catch(() => {})
+  }, [])
+
+  const isActive = (href: string) => {
+    if (href === '/dashboard') return pathname === '/dashboard' || pathname === '/'
+    return pathname === href || pathname.startsWith(href + '/')
+  }
 
   return (
     <aside className="rail">
-      <div className="head">
-        <div className="avatar">{initials}</div>
-        <div className="head-meta">
-          <div className="who">PARAWI</div>
-          <div className="role">You (CEO)</div>
-          <div className="status"><span className="dot"></span>Online</div>
+      {/* Departments */}
+      <div className="rail-section">
+        <div className="rail-h">Departments</div>
+        {DEPARTMENTS.map(dept => (
+          <Link
+            key={dept.id}
+            href={dept.href}
+            className={`dept${isActive(dept.href) ? ' dept-active' : ''}${dept.urgent ? ' dept-urgent' : ''}`}
+            style={{ '--dept-c': dept.color } as React.CSSProperties}
+          >
+            <span className="dept-ic">{dept.icon}</span>
+            <span>{dept.label}</span>
+            <span className="dept-count">—</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Agent floor */}
+      <div className="rail-section">
+        <div className="rail-h">Agent floor · {AGENTS.length} active</div>
+        <div className="agents-rail">
+          {AGENTS.map(agent => (
+            <div key={agent.id} className="agent-row" style={{ '--ar-c': agent.color } as React.CSSProperties}>
+              <span className="ar-av">{agent.id}</span>
+              <span className="ar-nm">
+                {agent.name}
+                <small>{agent.role}</small>
+              </span>
+              <span className={`ar-pulse${agent.status === 'idle' ? ' idle' : agent.status === 'warn' ? ' warn' : ''}`} />
+            </div>
+          ))}
         </div>
       </div>
 
-      <nav className="group">
-        <div className="group-title">Navigation</div>
-
-        {/* Dashboard */}
-        <Link className={`item ${isActive('/dashboard') ? 'active' : ''}`} href="/dashboard">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-          </svg>
-          Dashboard
-        </Link>
-
-        {/* Office View */}
-        <Link className={`item ${isActive('/office') ? 'active' : ''}`} href="/office">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="m3 11 9-8 9 8v10a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/>
-          </svg>
-          Office View
-        </Link>
-
-        {/* Tasks */}
-        <Link className={`item ${isActive('/tasks') ? 'active' : ''}`} href="/tasks">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="4" y="4" width="16" height="16" rx="2"/><path d="m9 12 2 2 4-4"/>
-          </svg>
-          Tasks
-        </Link>
-
-        {/* Integrations — collapsible */}
-        <button
-          className={`item ${integrationsActive || integrationsOpen ? 'active' : ''}`}
-          onClick={() => setIntegrationsOpen(v => !v)}
-          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', font: 'inherit' }}
-        >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-            Integrations
-          </span>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-            style={{ transform: integrationsOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-        </button>
-
-        {integrationsOpen && (
-          <div style={{ marginLeft: '12px', borderLeft: '1px solid var(--border-subtle)', paddingBottom: '4px' }}>
-            <Link className={`item ${isActive('/email') ? 'active' : ''}`} href="/email" style={{ paddingLeft: '20px', fontSize: '12px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-              Email
-            </Link>
-            <Link className={`item ${isActive('/calendar') ? 'active' : ''}`} href="/calendar" style={{ paddingLeft: '20px', fontSize: '12px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
-              Calendar
-            </Link>
-            <Link className={`item ${isActive('/jobs') ? 'active' : ''}`} href="/jobs" style={{ paddingLeft: '20px', fontSize: '12px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
-              Job Search
-            </Link>
-            <Link className={`item ${isActive('/accounts') ? 'active' : ''}`} href="/accounts" style={{ paddingLeft: '20px', fontSize: '12px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 20V10M9 20V4M15 20v-7M21 20v-4"/></svg>
-              Accounts
-            </Link>
-            <Link className={`item ${isActive('/notes') ? 'active' : ''}`} href="/notes" style={{ paddingLeft: '20px', fontSize: '12px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h11a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M4 16h15"/></svg>
-              Notes
-            </Link>
+      {/* Status footer */}
+      <div style={{ marginTop: 'auto' }}>
+        <div className="rail-status">
+          <div className="rs-row"><span>Today&rsquo;s cost</span><b>{todayCost}</b></div>
+          <div className="rs-row">
+            <span>Ollama (local)</span>
+            <b style={{ color: ollamaOnline === true ? 'var(--c-green-2)' : ollamaOnline === false ? '#f87171' : 'var(--fg-muted)' }}>
+              {ollamaOnline === null ? 'checking…' : ollamaOnline ? 'ready' : 'offline'}
+            </b>
           </div>
-        )}
+          <div className="rs-row"><span>Sync (Gmail · Cal)</span><b style={{ color: 'var(--c-success)' }}>live</b></div>
+          <div className="rs-row"><span>Vault</span><b>AES-256</b></div>
+        </div>
 
-        {/* Settings */}
-        <Link className={`item ${isActive('/settings') ? 'active' : ''}`} href="/settings">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-          Settings
-        </Link>
-      </nav>
-
-      <div className="group qa">
-        <div className="group-title">Quick Actions</div>
-        <Link className="item b1" href="/tasks?new=true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          New Task
-        </Link>
-        <Link className="item b2" href="/email">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-          Check Email
-        </Link>
-        <Link className="item b3" href="/office">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 11 9-8 9 8v10a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>
-          Open Office
-        </Link>
-        <Link className="item b4" href="/assistant">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a8 8 0 0 1-11 7.4L3 21l1.6-7A8 8 0 1 1 21 12z"/></svg>
-          Chat AI
-        </Link>
-      </div>
-
-      <div className="footer">
-        <div className="system">
-          <div className="label">AI System Status</div>
-          <div className="v1"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>All Systems Operational</div>
-          <div className="v2"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>12 agent rooms configured</div>
-          <div className="spark">
-            <span style={{height:'40%'}}></span><span style={{height:'65%'}}></span><span style={{height:'45%'}}></span><span style={{height:'80%'}}></span><span style={{height:'60%'}}></span><span style={{height:'90%'}}></span><span style={{height:'70%'}}></span><span style={{height:'55%'}}></span><span style={{height:'75%'}}></span><span style={{height:'85%'}}></span><span style={{height:'50%'}}></span><span style={{height:'95%'}}></span>
-          </div>
+        <div style={{ paddingTop: '12px', display: 'flex', gap: '8px' }}>
+          <Link
+            href="/settings"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', borderRadius: '8px', background: 'var(--bg-surface)', border: '1px solid var(--border-default)', color: 'var(--fg-muted)', fontSize: '12px', textDecoration: 'none', transition: 'color 0.1s, background 0.1s' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </Link>
+          <Link
+            href="/accounts"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 10px', borderRadius: '8px', background: 'var(--bg-surface)', border: '1px solid var(--border-default)', color: 'var(--fg-muted)', textDecoration: 'none', transition: 'color 0.1s' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </Link>
         </div>
       </div>
     </aside>
