@@ -9,6 +9,9 @@ interface Props {
   tasks: any[]
   recentEmails: any[]
   pendingApprovals: any[]
+  jobCount: number
+  noteCount: number
+  hrCount: number
 }
 
 function relativeTime(iso: string | null | undefined): string {
@@ -55,7 +58,7 @@ const STATIC_APPROVALS = [
   { id: 'appr-nv', agentId: 'NV', agentName: 'Nova',  color: 'var(--c-orange)', kind: 'Career · Apply',   title: 'Submit application: Ledgerline · SWE I (remote)',        meta: ['match score: 82 / 100', 'F-1 sponsor: yes'],           preview: 'Resume v3 + tailored cover letter (270 words). Posted within F-1 OPT window. No questions in their portal will need free-text answers.', actions: ['Submit', 'Open draft'] },
 ]
 
-export default function DashboardClient({ user, accounts, tasks, recentEmails, pendingApprovals }: Props) {
+export default function DashboardClient({ user, accounts, tasks, recentEmails, pendingApprovals, jobCount, noteCount, hrCount }: Props) {
   const [greeting, setGreeting] = useState('')
   const [dateStr, setDateStr] = useState('')
   const [calEvents, setCalEvents] = useState<any[]>([])
@@ -186,23 +189,23 @@ export default function DashboardClient({ user, accounts, tasks, recentEmails, p
         <Link href="/jobs" className="dtile dtile-color" style={{ '--tile-c': 'var(--c-orange)', textDecoration: 'none' } as React.CSSProperties}>
           <div>
             <div className="dt-lab">Career</div>
-            <div className="dt-n">—</div>
+            <div className="dt-n">{jobCount > 0 ? jobCount : '—'}</div>
           </div>
-          <div className="dt-sub">job pipeline</div>
+          <div className="dt-sub">{jobCount > 0 ? 'active leads' : 'job pipeline'}</div>
         </Link>
         <Link href="/notes" className="dtile dtile-color" style={{ '--tile-c': 'var(--c-cyan)', textDecoration: 'none' } as React.CSSProperties}>
           <div>
             <div className="dt-lab">School</div>
-            <div className="dt-n">—</div>
+            <div className="dt-n">{noteCount > 0 ? noteCount : '—'}</div>
           </div>
-          <div className="dt-sub">notes & deadlines</div>
+          <div className="dt-sub">{noteCount > 0 ? `${noteCount} note${noteCount !== 1 ? 's' : ''}` : 'notes & deadlines'}</div>
         </Link>
         <Link href="/assistant" className="dtile dtile-color" style={{ '--tile-c': 'var(--c-teal)', textDecoration: 'none' } as React.CSSProperties}>
           <div>
             <div className="dt-lab">Work / HR</div>
-            <div className="dt-n">—</div>
+            <div className="dt-n">{hrCount > 0 ? hrCount : '—'}</div>
           </div>
-          <div className="dt-sub">compliance</div>
+          <div className="dt-sub">{hrCount > 0 ? `${hrCount} open task${hrCount !== 1 ? 's' : ''}` : 'compliance'}</div>
         </Link>
         <div className="dtile dtile-muted">
           <div>

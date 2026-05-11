@@ -6,27 +6,39 @@ export default async function DashboardPage() {
   const session = await auth()
   if (!session?.user?.id) return null
 
-  const [accounts, tasks, recentEmails, pendingApprovals] = await Promise.all([
+  const uid = session.user.id
+
+  const [accounts, tasks, recentEmails, pendingApprovals, jobCount, noteCount, hrCount] = await Promise.all([
     prisma.connectedAccount.findMany({
-      where: { userId: session.user.id, isActive: true },
+      where: { userId: uid, isActive: true },
       select: { id: true, emailAddress: true, accountLabel: true },
       orderBy: { createdAt: 'asc' },
     }),
     prisma.task.findMany({
-      where: { userId: session.user.id, status: { in: ['pending', 'in_progress'] } },
+      where: { userId: uid, status: { in: ['pending', 'in_progress'] } },
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       take: 20,
     }),
     prisma.emailCache.findMany({
-      where: { userId: session.user.id, isUnread: true },
+      where: { userId: uid, isUnread: true },
       orderBy: { receivedAt: 'desc' },
       take: 10,
       include: { connectedAccount: { select: { accountLabel: true, emailAddress: true } } },
     }),
     prisma.agentTask.findMany({
-      where: { userId: session.user.id, requiresApproval: true, status: { in: ['open', 'pending'] } },
+      where: { userId: uid, requiresApproval: true, status: { in: ['open', 'pending'] } },
       orderBy: { createdAt: 'desc' },
       take: 5,
+    }),
+    // Career: active job leads (exclude terminal statuses)
+    prisma.jobLead.count({
+      where: { userId: uid, status: { notIn: ['Rejected', 'Accepted', 'Skipped'] } },
+    }),
+    // School: notes count
+    prisma.note.count({ where: { userId: uid } }),
+    // Work/HR: open agentTasks assigned to HR/compliance agents
+    prisma.agentTask.count({
+      where: { userId: uid, status: { in: ['open', 'in_progress'] }, assignedTo: { in: ['Lex', 'Work & Compliance', 'HR Agent'] } },
     }),
   ])
 
@@ -37,6 +49,9 @@ export default async function DashboardPage() {
       tasks={tasks}
       recentEmails={recentEmails}
       pendingApprovals={pendingApprovals}
+      jobCount={jobCount}
+      noteCount={noteCount}
+      hrCount={hrCount}
     />
   )
 }
