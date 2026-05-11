@@ -13,8 +13,8 @@
 - [ ] Add calendar event approval flow UI
 - [ ] Connect `jobSearchAgent` to a real job data source
 - [ ] Daily briefing agent: verify it runs and returns correct summary
-- [ ] Wire dept tile counts to real DB (Calendar events, Career/Jobs, School/Notes, HR/agentTasks)
-- [ ] Command bar (⌘K): implement actual command palette
+- [x] Wire dept tile counts to real DB (Career/Jobs, School/Notes, HR/agentTasks)
+- [x] Command bar (⌘K): implement actual command palette
 
 ## Backlog
 - [ ] Notes page: test task extraction via `taskExtractorAgent`

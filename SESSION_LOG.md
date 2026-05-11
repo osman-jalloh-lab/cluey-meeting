@@ -2,6 +2,34 @@
 
 ---
 
+## Session — 2026-05-10 (evening)
+
+**What we changed:**
+- Wired all 7 dept tile counts to real DB data (Career → JobLead, School → Note, Work/HR → AgentTask)
+- Built and shipped the ⌘K command palette
+
+**Files edited:**
+- `src/app/(dashboard)/dashboard/page.tsx` — Added `jobCount`, `noteCount`, `hrCount` parallel DB queries
+- `src/components/dashboard/DashboardClient.tsx` — Wired Career/School/HR tiles; added 3 new props
+- `src/components/layout/CommandPalette.tsx` — NEW: full command palette component
+- `src/components/layout/CommandTopBar.tsx` — Added ⌘K/Ctrl+K global listener, click handler, renders `<CommandPalette>`
+
+**Decisions made:**
+- Career count excludes `Rejected`, `Accepted`, `Skipped` JobLead statuses
+- Work/HR count filters AgentTasks by `assignedTo` matching Lex/HR agent names
+- Palette AI queries go to `/api/ai/ceo-command` (existing CEO command endpoint); response shown inline without closing the palette
+- Nav items and quick actions shown grouped by default; filtering collapses groups and appends AI option
+
+**Problems found:**
+- Escaped single quote in JSX `placeholder` attribute caused TS1003/TS1382 — fixed by switching to double-quote string with HTML entities
+
+**Next command to run:**
+```
+npm run dev  # ⌘K to open palette
+```
+
+---
+
 ## Session — 2026-05-10
 
 **What we changed:**
