@@ -231,6 +231,14 @@ input, select, textarea {
   grid-row: 2;
   overflow-y: auto;
   min-height: 0;
+  padding: 28px 36px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  background:
+    radial-gradient(1200px 600px at -10% -20%, rgba(139,92,246,0.06), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(59,130,246,0.05), transparent 60%),
+    var(--bg-page);
 }
 
 /* Inner pages still use pg-wrap for self-padding */
@@ -887,18 +895,6 @@ input, select, textarea {
 .badge-completed { background: rgba(59,130,246,0.14);  color: #60A5FA; }
 .badge-completed::before { background: #3B82F6; }
 
-/* =======================================================================
-   RAIL — left sidebar
-   ======================================================================= */
-.rail {
-  background: var(--bg-rail);
-  border-radius: var(--r-5);
-  border: 1px solid var(--border-subtle);
-  padding: 18px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
 .head { display: flex; align-items: center; gap: 10px; padding: 4px 6px; }
 .avatar {
   width: 38px; height: 38px; border-radius: var(--r-3);

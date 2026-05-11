@@ -102,7 +102,7 @@ export default function DashboardClient({ user, accounts, tasks, recentEmails, p
     : STATIC_APPROVALS
 
   return (
-    <div className="shell-canvas">
+    <>
 
       {/* ===== TODAY HERO ===== */}
       <section className="today-hero">
@@ -449,6 +449,6 @@ export default function DashboardClient({ user, accounts, tasks, recentEmails, p
 
       </section>
 
-    </div>
+    </>
   )
 }
