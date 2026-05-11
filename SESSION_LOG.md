@@ -2,6 +2,52 @@
 
 ---
 
+## Session — 2026-05-10
+
+**What we changed:**
+- Implemented the full PARAWI Command Center design from the extracted design archive
+- Rewrote the shell: `.shell` grid (260px rail + 64px topbar), new `CommandTopBar`, new `PixelSidebar` with DEPARTMENTS + AGENTS arrays
+- Built full `DashboardClient` canvas: today hero, dept tile strip (7 tiles), unified activity feed (7 agent items), approval queue (real DB + static fallback), agent office floor (8 cells, load meters), model cost card, calendar schedule timeline
+- Added `AnimatePresence` exit animations to `TaskModal`, `AgentTaskBoard` output drawer, `RecommendedJobs` add-lead form, `PixelSidebar` submenu (Phase 3)
+- Added stagger animation to task list items (Phase 2)
+- Fixed shell layout: `.shell > .shell-canvas` was missing padding/flex/background (was on unused `.cc-canvas`), removed duplicate old `.rail` rule, fixed double `.shell-canvas` wrapper in `DashboardClient`
+- Fixed login page: removed `onMouseEnter`/`onMouseLeave` from server component button
+- Updated `dashboard/page.tsx` to also fetch `pendingApprovals` (agentTasks with `requiresApproval: true`)
+
+**Files edited:**
+- `src/app/globals.css` — Full Command Center CSS added; fixed `.shell > .shell-canvas` and removed duplicate `.rail`
+- `src/components/layout/CommandTopBar.tsx` — NEW: topbar with cost chip, Telegram status, user avatar
+- `src/components/layout/PixelSidebar.tsx` — Complete rewrite: DEPARTMENTS + AGENTS, rail-status footer, Ollama/cost fetch
+- `src/components/dashboard/DashboardClient.tsx` — Complete rewrite: full command center canvas, fixed fragment wrapper
+- `src/app/(dashboard)/layout.tsx` — Updated to `<div className="shell">` with `CommandTopBar` + `PixelSidebar`
+- `src/app/(dashboard)/dashboard/page.tsx` — Added `pendingApprovals` fetch
+- `src/app/(dashboard)/tasks/page.tsx` — Stagger animation on task items
+- `src/components/dashboard/TaskModal.tsx` — AnimatePresence exit animation
+- `src/components/dashboard/AgentTaskBoard.tsx` — AnimatePresence on output drawer
+- `src/components/dashboard/RecommendedJobs.tsx` — AnimatePresence on add-lead form
+- `src/app/login/page.tsx` — Removed event handlers from server component
+- `public/office-scene.png` — NEW: pixel office background image
+
+**Decisions made:**
+- Used `color-mix(in srgb, ...)` (not `oklab`) for dynamic tinting to match design
+- Approval queue falls back to 5 static design items when no real `agentTasks` with `requiresApproval` exist
+- Activity feed is static agent briefing items (no unified feed table in DB yet)
+- Agent floor is static (agents are conceptual, not DB-driven)
+- `DashboardClient` uses React fragment `<>` — layout's `<main className="shell-canvas">` provides the grid cell
+
+**Problems found:**
+- `.shell > .shell-canvas` was missing its padding/flex/background (those were on `.cc-canvas` which was never used) — canvas appeared empty
+- Duplicate `.rail` CSS rule (old one overrode new command center one) — removed
+- Login page had `onMouseEnter`/`onMouseLeave` on a server component button — caused RSC error
+- `DashboardClient` was wrapping content in a second `.shell-canvas` div — fixed to use `<>`
+
+**Next command to run:**
+```
+npm run dev  # http://localhost:3000/dashboard
+```
+
+---
+
 ## Session: 2026-05-09
 
 ### Server Fixes

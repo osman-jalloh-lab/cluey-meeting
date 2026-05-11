@@ -6,14 +6,15 @@
 - [ ] Verify Gmail messages load for at least one account
 
 ## In Progress
-- [ ] Nothing started yet
+- [ ] Wire activity feed to real DB events (need unified feed table or aggregate from emails/tasks/agentTasks)
 
 ## Up Next
 - [ ] Test multi-Gmail account sync (add second account)
-- [ ] Build Jobs page UI (manual application tracking, 100+ entries)
 - [ ] Add calendar event approval flow UI
 - [ ] Connect `jobSearchAgent` to a real job data source
 - [ ] Daily briefing agent: verify it runs and returns correct summary
+- [ ] Wire dept tile counts to real DB (Calendar events, Career/Jobs, School/Notes, HR/agentTasks)
+- [ ] Command bar (⌘K): implement actual command palette
 
 ## Backlog
 - [ ] Notes page: test task extraction via `taskExtractorAgent`
@@ -23,6 +24,8 @@
 - [ ] Mobile layout check
 
 ## Done
+- [x] Implement PARAWI Command Center design (shell grid, topbar, rail, canvas, all sections)
+- [x] AnimatePresence exit animations (TaskModal, AgentTaskBoard, RecommendedJobs, PixelSidebar)
 - [x] Move QUICK_CMDS to right drawer — CEO CMD bar no longer clips on short screens
 - [x] Scaffold all pages and API routes
 - [x] Prisma 7 + libsql adapter wired
