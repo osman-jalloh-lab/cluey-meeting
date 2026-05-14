@@ -124,11 +124,13 @@ export async function runJobSearchAgent(
           'X-RapidAPI-Key': jsearchKey,
           'X-RapidAPI-Host': 'jsearch.p.rapidapi.com',
         },
+        cache: 'no-store',
       })
       const data = await res.json()
+      if (!res.ok) console.error('[JSearch] HTTP', res.status, data.message ?? '')
       rawJobs = (data.data ?? []).slice(0, 10)
-    } catch {
-      // fall through to gpt-only path
+    } catch (e) {
+      console.error('[JSearch] fetch error:', e instanceof Error ? e.message : String(e))
     }
   }
 
