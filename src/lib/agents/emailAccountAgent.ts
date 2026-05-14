@@ -1,6 +1,6 @@
 import { fetchRecentEmails } from '@/lib/google/gmail'
 import { prisma } from '@/lib/db'
-import * as gemini from '@/lib/ai/gemini'
+import * as openai from '@/lib/ai/openai'
 import { estimateCost } from '@/lib/ai/router'
 import { ConnectedAccount } from '@prisma/client'
 import { getAllCalendarEvents } from '@/lib/google/calendar'
@@ -273,19 +273,19 @@ export async function runEmailAccountAgent(
     : buildStudentJobPrompt(account.emailAddress, emailSummaries, calendarContext)
 
   try {
-    const result = await gemini.chatJson<{
+    const result = await openai.chatJson<{
       summary: string
       urgentEmails: EmailAccountAgentResult['urgentEmails']
       detectedAlerts: EmailAccountAgentResult['detectedAlerts']
       tasks: EmailAccountAgentResult['tasks']
       emailsNeedingReply: EmailAccountAgentResult['emailsNeedingReply']
-    }>(prompt)
+    }>([{ role: 'user', content: prompt }])
 
     await prisma.apiUsageLog.create({
       data: {
-        userId, provider: 'gemini', model: 'gemini-1.5-flash',
+        userId, provider: 'openai', model: 'gpt-4o-mini',
         inputTokens: Math.floor(prompt.length / 4), outputTokens: 600,
-        estimatedCost: estimateCost('gemini-1.5-flash', Math.floor(prompt.length / 4), 600),
+        estimatedCost: estimateCost('gpt-4o-mini', Math.floor(prompt.length / 4), 600),
         action: `inbox_specialist_${inboxType}`,
       },
     })
