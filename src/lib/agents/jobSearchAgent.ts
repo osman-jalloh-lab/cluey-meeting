@@ -104,7 +104,34 @@ export async function runJobSearchAgent(
     }
   }
 
-  // ── Route 3: General job query via gpt-4o-mini ─────────────────────────────
+  // ── Route 3: Real job search via JSearch (RapidAPI) ────────────────────────
+  const jsearchKey = process.env.JSEARCH_API_KEY
+  let rawJobs: Array<{ job_title: string; employer_name: string; job_city: string; job_state: string; job_is_remote: boolean; job_apply_link: string; job_description: string; job_employment_type: string }> = []
+
+  if (jsearchKey) {
+    try {
+      // Build a query from the task — strip common filler words
+      const query = task.replace(/find|search|look for|show me|get me/gi, '').trim()
+      const url = new URL('https://jsearch.p.rapidapi.com/search')
+      url.searchParams.set('query', `${query} Austin TX OR remote`)
+      url.searchParams.set('num_pages', '1')
+      url.searchParams.set('page', '1')
+      url.searchParams.set('date_posted', 'month')
+      url.searchParams.set('employment_types', 'FULLTIME,PARTTIME,CONTRACTOR,INTERN')
+
+      const res = await fetch(url.toString(), {
+        headers: {
+          'X-RapidAPI-Key': jsearchKey,
+          'X-RapidAPI-Host': 'jsearch.p.rapidapi.com',
+        },
+      })
+      const data = await res.json()
+      rawJobs = (data.data ?? []).slice(0, 10)
+    } catch {
+      // fall through to gpt-only path
+    }
+  }
+
   const recentLeads = await prisma.jobLead.findMany({
     where: { userId, status: { in: ['Applied', 'Screening', 'Interview', 'Evaluated'] } },
     orderBy: { updatedAt: 'desc' },
@@ -113,17 +140,23 @@ export async function runJobSearchAgent(
   })
 
   const leadsSummary = recentLeads.length > 0
-    ? `\nActive job leads:\n${recentLeads.map(l => `- ${l.title} at ${l.company} (${l.status}, score: ${l.matchScore}/100)`).join('\n')}`
+    ? `\nActive leads already tracked:\n${recentLeads.map(l => `- ${l.title} at ${l.company} (${l.status})`).join('\n')}`
     : ''
+
+  const jobsContext = rawJobs.length > 0
+    ? `\nReal job listings from JSearch:\n${rawJobs.map((j, i) =>
+        `${i + 1}. ${j.job_title} at ${j.employer_name} | ${j.job_is_remote ? 'Remote' : `${j.job_city}, ${j.job_state}`} | ${j.job_employment_type}\n   Apply: ${j.job_apply_link}\n   ${j.job_description?.slice(0, 200)}...`
+      ).join('\n\n')}`
+    : '\nNo live listings fetched (JSEARCH_API_KEY not set). Advise generally.'
 
   const systemPrompt = `${AGENT_SHORT_PROMPT}
 
-You are Nova, Osman's Career Advisor. Help with job search advice, pipeline review, and next steps. Focus on: cybersecurity, GRC, IT support, SOC analyst roles in Austin TX or remote. He is F-1 OPT authorized. He starts at UT System OCIO May 18 2026 (19.5 hrs/week max).
+You are Nova, Osman's Career Advisor. Review the REAL job listings below and rank the best matches for Osman. Focus on: cybersecurity, GRC, IT support, SOC analyst roles. He is F-1 OPT authorized (no full sponsorship needed for OPT, but flag H-1B-only roles). He works max 19.5 hrs/week at UT System OCIO starting May 18 2026 — so part-time or flexible roles are ideal alongside that.
 
 Return ONLY this JSON:
-{"response":"direct answer","opportunities":[{"company":"name","role":"title","action":"next step","priority":"high|medium|low"}],"draftEmail":null,"nextSteps":["step1","step2"]}`
+{"response":"2-3 sentence summary of what you found","opportunities":[{"company":"exact company name","role":"exact job title","action":"apply at <url> or specific next step","priority":"high|medium|low"}],"draftEmail":null,"nextSteps":["specific step 1","specific step 2","specific step 3"]}`
 
-  const userPrompt = `Task: ${task}${leadsSummary}${emailContext ? `\n\nContext: ${emailContext}` : ''}`
+  const userPrompt = `Task: ${task}${jobsContext}${leadsSummary}${emailContext ? `\n\nExtra context: ${emailContext}` : ''}`
 
   try {
     const result = await openai.chatJson<JobSearchAgentResult>([
