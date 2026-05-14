@@ -166,11 +166,25 @@ async function runTasksAgent(userId: string): Promise<string> {
 
 async function runBriefingAgent(userId: string): Promise<string> {
   const accounts = await prisma.connectedAccount.findMany({ where: { userId, isActive: true } })
-  const emailResults = await Promise.allSettled(accounts.map(a => runEmailAccountAgent(a, userId)))
+  const now = new Date()
+  const [emailResults, calendarEvents] = await Promise.all([
+    Promise.allSettled(accounts.map(a => runEmailAccountAgent(a, userId))),
+    getAllCalendarEvents(userId, {
+      timeMin: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+      timeMax: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
+      maxPerCalendar: 20,
+    }).catch(() => []),
+  ])
   const emails = emailResults
     .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof runEmailAccountAgent>>> => r.status === 'fulfilled')
     .map(r => r.value)
-  const b = await runDailyBriefingAgent(userId, emails, [])
+  // Map NormalizedCalendarEvent to CalendarEvent shape expected by briefing agent
+  const todayEvents = calendarEvents.map(e => ({
+    id: e.id, summary: e.title, description: e.description,
+    start: e.start, end: e.end, location: e.location,
+    attendees: e.attendees, meetLink: e.meetingLink, status: e.status,
+  }))
+  const b = await runDailyBriefingAgent(userId, emails, todayEvents)
   const lines = [
     b.greeting,
     '',
