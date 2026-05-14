@@ -2,6 +2,64 @@
 
 ---
 
+## Session — 2026-05-13
+
+**What we changed:**
+- Removed all static mock data: STATIC_APPROVALS, FEED_ITEMS, AGENTS — all three sections now show honest empty states
+- Fixed ⌘K command palette: AI result now shows `data.result` (full content) not `data.message` (short ack)
+- Fixed email encoding bug: replaced literal Unicode chars (em dash, bullet, middot) with ASCII in ceo-command route
+- Fixed calendar returning empty silently: surfaced auth errors, added error propagation in getAllCalendarEvents
+- Fixed briefing agent: was passing empty [] for calendar events — now fetches today's real events
+- Switched email agent from suspended Gemini key to gpt-4o-mini
+- Switched jobSearchAgent Route 3 from Claude Sonnet (expensive) to gpt-4o-mini
+- Deleted cyberNewsAgent entirely (file, API route, prompt)
+- Cancelled 6 stuck open AgentTasks in DB
+- Relabeled osman.jalloh@austincc.edu account from "Personal" to "Work" in DB
+- Wired JSearch RapidAPI for real job listings (free tier 200 req/month)
+- Added JSEARCH_API_KEY placeholder to .env.local
+- Fixed JSearch Next.js fetch: added cache: no-store to bypass Next.js fetch cache
+- Connected all 3 Google accounts, reconnected expired OAuth tokens
+- Pushed all changes to GitHub: https://github.com/osman-jalloh-lab/cluey-meeting
+
+**Files edited:**
+- `src/components/dashboard/DashboardClient.tsx` — removed STATIC_APPROVALS, FEED_ITEMS, AGENTS; empty states for all three sections
+- `src/components/layout/CommandPalette.tsx` — fixed result priority (data.result first)
+- `src/app/api/ai/ceo-command/route.ts` — encoding fix, calendar error surfacing, briefing calendar fix, ASCII chars
+- `src/lib/google/calendar.ts` — error propagation in getAllCalendarEvents
+- `src/lib/agents/emailAccountAgent.ts` — switched Gemini to gpt-4o-mini
+- `src/lib/agents/jobSearchAgent.ts` — deleted Anthropic Sonnet route, wired JSearch + gpt-4o-mini
+- `src/lib/agents/cyberNewsAgent.ts` — DELETED
+- `src/app/api/ai/cyber-news/route.ts` — DELETED
+- `src/lib/context/personal.ts` — removed CYBER_NEWS_AGENT_PROMPT
+
+**Palette commands tested and working:**
+- `check my inbox` — real Gmail data, AI analysis via gpt-4o-mini (Work: 12 unread, School: 15, Personal: 15)
+- `whats on my calendar this week` — 15 real events from Google Calendar
+- `plan my day` / `daily briefing` — full briefing with real email + calendar data
+- `what tasks do i have` — DB read, no API cost
+- `job pipeline status` — DB read, no API cost
+- `find cybersecurity jobs Austin remote` — real listings via JSearch (SailPoint, Home Depot, etc.)
+
+**Decisions made:**
+- All agents now on gpt-4o-mini — no Gemini, no Claude Sonnet in agent pipeline
+- JSearch free tier (200 req/month) sufficient for daily job queries
+- Gemini API key suspended — removed dependency entirely
+- cache: no-store required on JSearch fetch inside Next.js to bypass framework cache
+
+**Problems found & fixed:**
+- Gemini API key suspended (403) — swapped to gpt-4o-mini
+- Calendar silently returning empty — expired OAuth tokens, fixed by reconnecting accounts
+- JSearch returning "not subscribed" — needed to subscribe on RapidAPI dashboard
+- Next.js fetch caching JSearch response — fixed with cache: no-store
+- Em dash and bullet chars double-encoded on Windows — replaced with ASCII
+
+**Next steps:**
+- Add more job query types (GRC, IT support, SOC analyst)
+- Wire activity feed to real AgentTask/AgentMessage DB data
+- Wire agent office floor to real agent activity
+
+---
+
 ## Session — 2026-05-10 (evening)
 
 **What we changed:**
