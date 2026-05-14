@@ -11,7 +11,7 @@ const Schema = z.object({
   command: z.string().min(1).max(500),
 })
 
-// Agent routing by keyword — no API cost
+// Agent routing by keyword - no API cost
 const ROUTING_RULES: Array<{ keywords: string[]; agent: string; priority: string; source: string }> = [
   {
     keywords: ['email', 'inbox', 'gmail', 'unread', 'reply', 'message', 'recruiter email', 'check mail'],
@@ -65,7 +65,7 @@ function buildTaskTitle(command: string, agent: string): string {
   return `${agent}: ${command}`
 }
 
-// ── Agent executors — each returns a formatted string result ──────────────────
+// ── Agent executors - each returns a formatted string result ──────────────────
 
 async function runEmailAgent(userId: string, command: string): Promise<string> {
   const accounts = await prisma.connectedAccount.findMany({ where: { userId, isActive: true } })
@@ -75,12 +75,12 @@ async function runEmailAgent(userId: string, command: string): Promise<string> {
   for (const r of results) {
     if (r.status !== 'fulfilled') continue
     const res = r.value
-    lines.push(`${res.accountLabel} (${res.inboxType}) — ${res.unreadCount} unread of ${res.totalEmails} checked`)
+    lines.push(`${res.accountLabel} (${res.inboxType}) - ${res.unreadCount} unread of ${res.totalEmails} checked`)
     lines.push(res.summary)
     if (res.urgentEmails.length > 0) {
       lines.push(`\nNeeds attention (${res.urgentEmails.length}):`)
       res.urgentEmails.slice(0, 5).forEach(e => {
-        lines.push(`• ${e.from}`)
+        lines.push(`* ${e.from}`)
         lines.push(`  "${e.subject}"`)
         lines.push(`  Why urgent: ${e.reason}`)
         lines.push(`  Action: ${e.suggestedAction}`)
@@ -89,13 +89,13 @@ async function runEmailAgent(userId: string, command: string): Promise<string> {
     if (res.emailsNeedingReply.length > 0) {
       lines.push(`\nNeeds reply (${res.emailsNeedingReply.length}):`)
       res.emailsNeedingReply.forEach(e => {
-        lines.push(`• "${e.subject}" from ${e.from} — tone: ${e.suggestedReplyTone}`)
+        lines.push(`* "${e.subject}" from ${e.from} - tone: ${e.suggestedReplyTone}`)
       })
     }
     if (res.tasks.length > 0) {
       lines.push(`\nAction items extracted (${res.tasks.length}):`)
       res.tasks.slice(0, 5).forEach(t => {
-        lines.push(`• [${t.priority}] ${t.title}`)
+        lines.push(`* [${t.priority}] ${t.title}`)
         if (t.dueDate) lines.push(`  Due: ${t.dueDate}`)
       })
     }
@@ -105,21 +105,32 @@ async function runEmailAgent(userId: string, command: string): Promise<string> {
 }
 
 async function runCalendarAgent(userId: string): Promise<string> {
+  const now = new Date()
+  const timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const timeMax = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+  let events: Awaited<ReturnType<typeof getAllCalendarEvents>> = []
+  let calendarError: string | null = null
+
   try {
-    const now = new Date()
-    const timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const timeMax = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-    const events = await getAllCalendarEvents(userId, { timeMin, timeMax, maxPerCalendar: 15 })
-    if (events.length === 0) return 'No events found in the next 7 days.'
-    const lines = events.slice(0, 10).map(e => {
-      const when = e.start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-      const time = e.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      return `• ${when} ${time} — ${e.title}${e.meetingLink ? ' [has link]' : ''}\n  ${e.calendarName} · ${e.sourceAccountEmail}`
-    })
-    return `Next 7 days (${events.length} events):\n\n${lines.join('\n')}`
-  } catch {
-    return 'Calendar not connected or no events found. Check the Accounts page to reconnect.'
+    events = await getAllCalendarEvents(userId, { timeMin, timeMax, maxPerCalendar: 15 })
+  } catch (e) {
+    calendarError = e instanceof Error ? e.message : String(e)
   }
+
+  if (calendarError) {
+    return `Calendar error: ${calendarError}. Go to /accounts and reconnect your Google account to refresh the token.`
+  }
+  if (events.length === 0) {
+    return 'No events found in the next 7 days. If you expect events, go to /accounts and reconnect Google Calendar.'
+  }
+
+  const lines = events.slice(0, 10).map(e => {
+    const when = e.start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    const time = e.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    return `* ${when} ${time} - ${e.title}${e.meetingLink ? ' [has link]' : ''}\n  ${e.calendarName} | ${e.sourceAccountEmail}`
+  })
+  return `Next 7 days (${events.length} events):\n\n${lines.join('\n')}`
 }
 
 async function runTasksAgent(userId: string): Promise<string> {
@@ -148,7 +159,7 @@ async function runTasksAgent(userId: string): Promise<string> {
   }
   if (completed.length > 0) {
     lines.push(`\nRecently completed (${completed.length}):`)
-    completed.forEach(t => lines.push(`• ${t.title}`))
+    completed.forEach(t => lines.push(`* ${t.title}`))
   }
   return lines.join('\n')
 }
@@ -173,7 +184,7 @@ async function runBriefingAgent(userId: string): Promise<string> {
     '',
     b.suggestedNextActions.length > 0 ? 'Do next:\n' + b.suggestedNextActions.slice(0, 4).map((a, i) => `${i + 1}. ${a}`).join('\n') : '',
     '',
-    b.urgentFollowUps.length > 0 ? 'Urgent follow-ups:\n' + b.urgentFollowUps.slice(0, 3).map(u => `• [${u.priority}] ${u.suggestedAction} — ${u.reason}`).join('\n') : '',
+    b.urgentFollowUps.length > 0 ? 'Urgent follow-ups:\n' + b.urgentFollowUps.slice(0, 3).map(u => `* [${u.priority}] ${u.suggestedAction} - ${u.reason}`).join('\n') : '',
   ].filter(Boolean)
   return lines.join('\n')
 }
@@ -187,7 +198,7 @@ async function executeAgent(source: string, userId: string, command: string): Pr
       const parts = [r.response]
       if (r.nextSteps.length > 0) parts.push('\nNext steps:\n' + r.nextSteps.map((s, i) => `${i + 1}. ${s}`).join('\n'))
       if (r.opportunities && r.opportunities.length > 0) {
-        parts.push('\nOpportunities:\n' + r.opportunities.slice(0, 5).map(o => `• ${o.role} at ${o.company} — ${o.action}`).join('\n'))
+        parts.push('\nOpportunities:\n' + r.opportunities.slice(0, 5).map(o => `* ${o.role} at ${o.company} - ${o.action}`).join('\n'))
       }
       return parts.join('\n')
     }
@@ -216,7 +227,7 @@ export async function POST(request: NextRequest) {
   const routing = routeCommand(command)
   const taskTitle = buildTaskTitle(command, routing.agent)
 
-  // Create task (status: working — we execute immediately)
+  // Create task (status: working - we execute immediately)
   const task = await prisma.agentTask.create({
     data: {
       userId,

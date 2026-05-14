@@ -107,25 +107,22 @@ export async function getAllCalendarEvents(
   if (calendarAccounts.length === 0) return []
 
   const allEvents: NormalizedCalendarEvent[] = []
+  const accountErrors: string[] = []
 
   for (const account of calendarAccounts) {
     try {
       const calendar = await getCalendarClient(account.id)
 
-      // Get all calendars for this account
       let calList: Array<{ id: string; summary: string; primary: boolean }> = []
       try {
         calList = await fetchCalendarList(account.id)
       } catch {
-        // Fall back to primary only
         calList = [{ id: 'primary', summary: 'Primary', primary: true }]
       }
 
-      // Track event IDs seen for this account to avoid cross-calendar duplicates
-      // (same event appears in primary + a subscribed/shared calendar)
       const seenForAccount = new Set<string>()
+      let accountFetched = false
 
-      // Fetch events from each calendar
       for (const cal of calList) {
         try {
           const res = await calendar.events.list({
@@ -136,20 +133,30 @@ export async function getAllCalendarEvents(
             orderBy: 'startTime',
             maxResults: options.maxPerCalendar ?? 20,
           })
-
+          accountFetched = true
           for (const e of res.data.items ?? []) {
             if (!e.id) continue
-            if (seenForAccount.has(e.id)) continue  // skip cross-calendar duplicate
+            if (seenForAccount.has(e.id)) continue
             seenForAccount.add(e.id)
             allEvents.push(mapEventToNormalized(e, cal.id, cal.summary, account.id, account.emailAddress))
           }
-        } catch {
-          // Skip this calendar, continue with others
+        } catch (calErr) {
+          const msg = calErr instanceof Error ? calErr.message : String(calErr)
+          console.error(`[Calendar] ${account.emailAddress}/${cal.id}: ${msg}`)
         }
       }
-    } catch {
-      // Skip this account, continue with others
+
+      if (!accountFetched) {
+        accountErrors.push(`${account.emailAddress}: all calendars failed (token may need refresh)`)
+      }
+    } catch (accountErr) {
+      const msg = accountErr instanceof Error ? accountErr.message : String(accountErr)
+      accountErrors.push(`${account.emailAddress}: ${msg}`)
     }
+  }
+
+  if (allEvents.length === 0 && accountErrors.length > 0) {
+    throw new Error(accountErrors.join('; '))
   }
 
   // Sort by start time
