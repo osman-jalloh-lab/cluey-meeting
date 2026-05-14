@@ -43,6 +43,22 @@ export interface DailyBriefingResult {
   taskSummary: string
   suggestedNextActions: string[]
   generatedAt: string
+  // Extended fields — populated by the daily-briefing route
+  suggestedReplies?: Array<{
+    from: string
+    subject: string
+    emailId: string
+    suggestedTone: string
+    accountEmail: string
+    accountId: string
+  }>
+  jobUpdate?: {
+    summary: string
+    toReview: number
+    readyToApply: number
+    followUpsDue: number
+    actions: string[]
+  } | null
 }
 
 export async function runDailyBriefingAgent(

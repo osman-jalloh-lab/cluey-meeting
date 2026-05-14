@@ -6,9 +6,16 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 const API = BOT_TOKEN ? `https://api.telegram.org/bot${BOT_TOKEN}` : null
 
+interface TelegramResponse {
+  ok: boolean
+  result?: unknown
+  description?: string
+  error_code?: number
+}
+
 // ── Core send ─────────────────────────────────────────────────────────────────
 
-async function callApi(method: string, body: object): Promise<any> {
+async function callApi(method: string, body: object): Promise<TelegramResponse | null> {
   if (!API) return null
   try {
     const res = await fetch(`${API}/${method}`, {
@@ -23,7 +30,7 @@ async function callApi(method: string, body: object): Promise<any> {
 }
 
 // Send plain text to Osman's chat
-async function send(text: string, extra: object = {}): Promise<any> {
+async function send(text: string, extra: object = {}): Promise<TelegramResponse | null> {
   if (!API || !CHAT_ID) return null
   return callApi('sendMessage', {
     chat_id: CHAT_ID,
@@ -35,7 +42,7 @@ async function send(text: string, extra: object = {}): Promise<any> {
 }
 
 // Send to a specific chat_id (used in webhook responses)
-export async function sendTo(chatId: string | number, text: string, extra: object = {}): Promise<any> {
+export async function sendTo(chatId: string | number, text: string, extra: object = {}): Promise<TelegramResponse | null> {
   if (!API) return null
   return callApi('sendMessage', {
     chat_id: chatId,
@@ -57,7 +64,7 @@ export async function sendWithApprovalButtons(
   text: string,
   taskId: string,
   actions: Array<{ label: string; callbackData: string }> = []
-): Promise<any> {
+): Promise<TelegramResponse | null> {
   const defaultActions = [
     { label: '✅ Approve', callbackData: `approve_${taskId}` },
     { label: '✏️ Edit', callbackData: `edit_${taskId}` },
@@ -85,7 +92,7 @@ export async function sendWithConfirmButtons(
   taskId: string,
   confirmLabel = '✅ Do it',
   ignoreLabel = '❌ Skip'
-): Promise<any> {
+): Promise<TelegramResponse | null> {
   return callApi('sendMessage', {
     chat_id: chatId,
     text,
@@ -124,7 +131,7 @@ export async function answerCallbackQuery(callbackQueryId: string, text?: string
 }
 
 // Register a webhook URL with Telegram
-export async function setWebhook(url: string): Promise<any> {
+export async function setWebhook(url: string): Promise<TelegramResponse | null> {
   return callApi('setWebhook', {
     url,
     allowed_updates: ['message', 'callback_query'],
@@ -133,7 +140,7 @@ export async function setWebhook(url: string): Promise<any> {
 }
 
 // Get current webhook info
-export async function getWebhookInfo(): Promise<any> {
+export async function getWebhookInfo(): Promise<TelegramResponse | null> {
   if (!API) return null
   const res = await fetch(`${API}/getWebhookInfo`)
   return res.json()

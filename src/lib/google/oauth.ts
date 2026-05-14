@@ -2,16 +2,14 @@ import { google } from 'googleapis'
 import { encrypt, decrypt } from '@/lib/crypto'
 import { prisma } from '@/lib/db'
 
-// Full scope set — includes Gmail + Calendar read/write + identity
+// Phase 1/2: Read-only scopes to avoid requesting unnecessary write access
 export const FULL_GOOGLE_SCOPES = [
   'openid',
   'email',
   'profile',
   'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
   'https://www.googleapis.com/auth/calendar.events.readonly',
-  'https://www.googleapis.com/auth/calendar.events',
 ]
 
 // Detect whether a stored scope string includes Calendar access

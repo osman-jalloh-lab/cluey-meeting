@@ -15,12 +15,6 @@ const OLLAMA_AGENTS = new Set([
   'calendar',
 ])
 
-// These agent types need cloud quality
-const CLOUD_AGENTS = new Set([
-  'email',      // reply drafting needs GPT quality
-  'job_search', // cover letters need Claude quality
-  'assistant',  // general assistant stays on cloud
-])
 
 export type AgentType =
   | 'email'

@@ -348,7 +348,12 @@ async function sendEmailPriorityCards(chatId: number, emails: TopEmail[]): Promi
 
     const rows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = []
     if (email.emailId) {
-      rows.push([{ text: '📧 View in Gmail', url: `https://mail.google.com/mail/#all/${email.emailId}` }])
+      // Row 1: Read full email + View in Gmail
+      rows.push([
+        { text: '📖 Read Email', callback_data: `readmail_${email.emailId}` },
+        { text: '📧 Open in Gmail', url: `https://mail.google.com/mail/#all/${email.emailId}` },
+      ])
+      // Row 2: Draft Reply + Remind Later
       rows.push([
         { text: '✍️ Draft Reply', callback_data: `drf_${email.emailId}` },
         { text: '⏰ Remind Later', callback_data: `rem_${email.emailId}` },
@@ -358,6 +363,46 @@ async function sendEmailPriorityCards(chatId: number, emails: TopEmail[]): Promi
     }
     await sendTo(chatId, text, { reply_markup: { inline_keyboard: rows } })
   }
+}
+
+// Read full email body from cache
+async function handleReadEmail(chatId: number, userId: string, emailId: string): Promise<void> {
+  await sendTyping(chatId)
+  const cached = await prisma.emailCache.findFirst({
+    where: { userId, gmailMessageId: emailId },
+  })
+  if (!cached) {
+    await sendTo(chatId, '❌ Email not found in cache. Open Gmail directly.', { reply_markup: navKeyboard() })
+    return
+  }
+
+  // Build the full email view
+  const body = cached.bodyText ?? cached.snippet ?? '(no body text available)'
+  const truncated = body.length > 900 ? body.slice(0, 900) + '\n\n<i>...email continues. Open Gmail for the full version.</i>' : body
+
+  const lines = [
+    `📧 <b>${(cached.subject ?? '(no subject)').slice(0, 70)}</b>`,
+    `<b>From:</b> ${cached.from}`,
+    cached.to ? `<b>To:</b> ${cached.to.slice(0, 60)}` : '',
+    cached.receivedAt ? `<b>Received:</b> ${new Date(cached.receivedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : '',
+    cached.hasAttachment ? '<b>Has attachment</b>' : '',
+    '',
+    '<b>Message:</b>',
+    truncated,
+  ].filter(Boolean).join('\n')
+
+  await sendTo(chatId, trunc(lines), {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '✍️ Draft Reply', callback_data: `drf_${emailId}` },
+          { text: '⏰ Remind Later', callback_data: `rem_${emailId}` },
+        ],
+        [{ text: '📧 Open in Gmail', url: `https://mail.google.com/mail/#all/${emailId}` }],
+        [{ text: '🏢 Office', callback_data: 'go_office' }, { text: '📬 Back to Inbox', callback_data: 'menu_emails' }],
+      ],
+    },
+  })
 }
 
 // Full email scan UX — sections by inbox type + priority cards
@@ -672,6 +717,12 @@ async function handleCallback(cb: TgCallback, userId: string): Promise<void> {
     return
   }
 
+  // ── Read full email ──────────────────────────────────────────────────────
+  if (data.startsWith('readmail_')) {
+    await handleReadEmail(chatId, userId, data.slice(9))
+    return
+  }
+
   // ── Draft reply flow ─────────────────────────────────────────────────────
   if (data.startsWith('drf_')) {
     await handleDraftRequest(chatId, userId, data.slice(4))
@@ -941,6 +992,17 @@ async function handleMessage(msg: TgMessage, userId: string): Promise<void> {
   // ── /studentemail ─────────────────────────────────────────────────────────
   if (text === '/studentemail') {
     await sendEmailScanResults(chatId, userId, 'student_job')
+    return
+  }
+
+  // ── /read <emailId> — show full email body ───────────────────────────────
+  if (text.startsWith('/read ')) {
+    const emailId = text.slice(6).trim()
+    if (!emailId) {
+      await sendTo(chatId, 'Usage: /read <emailId>\nGet the emailId from a priority card button.', { reply_markup: navKeyboard() })
+      return
+    }
+    await handleReadEmail(chatId, userId, emailId)
     return
   }
 

@@ -104,13 +104,14 @@ export default function AgentPanel({ agent, onClose }: AgentPanelProps) {
 
       {/* Panel */}
       <div
-        className="fixed top-0 right-0 h-full z-50 flex flex-col transition-transform duration-300 ease-out"
+        className="fixed top-0 right-0 h-full z-50 flex flex-col"
         style={{
           width: 'min(500px, 100vw)',
           background: 'var(--background)',
           borderLeft: '1px solid var(--border)',
           transform: agent ? 'translateX(0)' : 'translateX(100%)',
           boxShadow: '-12px 0 40px rgba(0,0,0,0.35)',
+          transition: 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
       >
         {agent && (
@@ -209,22 +210,23 @@ export default function AgentPanel({ agent, onClose }: AgentPanelProps) {
                         <button
                           key={i}
                           onClick={() => send(qa)}
-                          className="w-full text-left px-4 py-3 rounded-xl text-sm transition-all"
+                          className="w-full text-left px-4 py-3 rounded-xl text-sm"
                           style={{
                             background: 'var(--card)',
                             border: `1px solid var(--border)`,
                             color: 'var(--foreground)',
                             cursor: 'pointer',
+                            transition: 'border-color 0.15s ease, background 0.15s ease',
+                            animation: 'slidein 0.22s ease-out backwards',
+                            animationDelay: `${i * 60}ms`,
                           }}
                           onMouseEnter={e => {
-                            const el = e.currentTarget
-                            el.style.borderColor = `${agent.color}60`
-                            el.style.background = `${agent.color}08`
+                            e.currentTarget.style.borderColor = `${agent.color}60`
+                            e.currentTarget.style.background = `${agent.color}08`
                           }}
                           onMouseLeave={e => {
-                            const el = e.currentTarget
-                            el.style.borderColor = 'var(--border)'
-                            el.style.background = 'var(--card)'
+                            e.currentTarget.style.borderColor = 'var(--border)'
+                            e.currentTarget.style.background = 'var(--card)'
                           }}
                         >
                           <span style={{ color: agent.color, marginRight: 8 }}>→</span>
@@ -238,7 +240,8 @@ export default function AgentPanel({ agent, onClose }: AgentPanelProps) {
                 messages.map((msg, i) => (
                   <div
                     key={i}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`chat-msg flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    style={{ animationDelay: `${Math.min(i, 3) * 40}ms` }}
                   >
                     {msg.role === 'assistant' && (
                       <div

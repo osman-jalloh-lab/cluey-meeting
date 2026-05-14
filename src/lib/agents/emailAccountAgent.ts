@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import * as gemini from '@/lib/ai/gemini'
 import { estimateCost } from '@/lib/ai/router'
 import { ConnectedAccount } from '@prisma/client'
+import { getAllCalendarEvents } from '@/lib/google/calendar'
 
 export type InboxType = 'work' | 'student_job'
 
@@ -53,22 +54,9 @@ function detectInboxType(emailAddress: string): InboxType {
   return 'student_job'
 }
 
-const WORK_CATEGORIES = [
-  'HR', 'I-9', 'E-Verify', 'Workday', 'immigration', 'I-20', 'OPT', 'EAD',
-  'name change', 'onboarding', 'compliance', 'employee documents', 'USCIS',
-  'Supplement B', 're-verification', 'I-94', 'I-797', 'payroll', 'benefits',
-  'background check', 'fingerprint', 'new hire', 'W-4', 'direct deposit',
-]
 
-const STUDENT_JOB_CATEGORIES = [
-  'professor', 'instructor', 'assignment', 'deadline', 'grade', 'syllabus',
-  'class', 'course', 'exam', 'quiz', 'lab', 'lecture', 'academic',
-  'recruiter', 'job offer', 'interview', 'hiring', 'application', 'internship',
-  'career', 'opportunity', 'position', 'role', 'salary', 'compensation',
-  'LinkedIn', 'Indeed', 'Handshake', 'follow up', 'phone screen', 'technical screen',
-]
 
-function buildWorkPrompt(emailAddress: string, emailSummaries: object[]): string {
+function buildWorkPrompt(emailAddress: string, emailSummaries: object[], calendarContext: string): string {
   return `You are the Inbox Specialist analyzing the ACC work email: ${emailAddress}.
 
 This is a WORK inbox. Watch for these categories with HIGH priority:
@@ -125,10 +113,13 @@ Emails to analyze:
 ${JSON.stringify(emailSummaries, null, 2)}
 
 Today: ${new Date().toISOString().split('T')[0]}
+Upcoming Calendar Context (to check for meeting-related emails):
+${calendarContext || 'No upcoming events.'}
+
 Return ONLY valid JSON. Flag anything immigration or compliance-related as high priority.`
 }
 
-function buildStudentJobPrompt(emailAddress: string, emailSummaries: object[]): string {
+function buildStudentJobPrompt(emailAddress: string, emailSummaries: object[], calendarContext: string): string {
   return `You are the Inbox Specialist analyzing the student/job email: ${emailAddress}.
 
 This inbox covers TWO areas — track both:
@@ -182,6 +173,9 @@ Emails to analyze:
 ${JSON.stringify(emailSummaries, null, 2)}
 
 Today: ${new Date().toISOString().split('T')[0]}
+Upcoming Calendar Context (to check for meeting/interview-related emails):
+${calendarContext || 'No upcoming events.'}
+
 Return ONLY valid JSON. Treat any recruiter or interview email as high priority.`
 }
 
@@ -258,9 +252,25 @@ export async function runEmailAccountAgent(
     receivedAt: e.receivedAt instanceof Date ? e.receivedAt.toISOString() : String(e.receivedAt),
   }))
 
+  // Fetch upcoming calendar events to cross-reference with emails
+  let calendarContext = ''
+  try {
+    const now = new Date()
+    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    const upcomingEvents = await getAllCalendarEvents(userId, { timeMin: now, timeMax: nextWeek, maxPerCalendar: 10 })
+    
+    if (upcomingEvents.length > 0) {
+      calendarContext = upcomingEvents.map(e => 
+        `- ${e.title} on ${e.start.toISOString().split('T')[0]} at ${e.start.toISOString().split('T')[1].substring(0, 5)}`
+      ).join('\n')
+    }
+  } catch (err) {
+    console.error('Failed to load calendar context for email agent', err)
+  }
+
   const prompt = inboxType === 'work'
-    ? buildWorkPrompt(account.emailAddress, emailSummaries)
-    : buildStudentJobPrompt(account.emailAddress, emailSummaries)
+    ? buildWorkPrompt(account.emailAddress, emailSummaries, calendarContext)
+    : buildStudentJobPrompt(account.emailAddress, emailSummaries, calendarContext)
 
   try {
     const result = await gemini.chatJson<{

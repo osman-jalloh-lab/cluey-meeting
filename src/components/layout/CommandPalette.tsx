@@ -96,7 +96,7 @@ export default function CommandPalette({ open, onClose }: Props) {
           body: JSON.stringify({ command: query }),
         })
         const data = await res.json()
-        setAiResult(data.response ?? data.message ?? data.result ?? JSON.stringify(data))
+        setAiResult(data.result ?? data.response ?? data.message ?? JSON.stringify(data))
       } catch {
         setAiResult('Error reaching the office. Try again.')
       } finally {

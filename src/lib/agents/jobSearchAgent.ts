@@ -1,7 +1,6 @@
-import * as openai from '@/lib/ai/openai'
 import { prisma } from '@/lib/db'
+import * as openai from '@/lib/ai/openai'
 import { AGENT_SHORT_PROMPT } from '@/lib/context/personal'
-import { estimateCost } from '@/lib/ai/router'
 import { evaluateJob, getDailyJobSummary } from './jobEvaluator'
 import type { JobEvaluation, DailyJobSummary } from './jobEvaluator'
 
@@ -59,7 +58,7 @@ export async function runJobSearchAgent(
   if (isEvaluationRequest(task) && task.length > 300) {
     // Extract title and company from the task text if possible — fallback to Unknown
     let jobTitle = 'Unknown Role'
-    let company = 'Unknown Company'
+    const company = 'Unknown Company'
 
     // Try to extract from first line of the task
     const firstLine = task.split('\n')[0] ?? ''
@@ -105,74 +104,38 @@ export async function runJobSearchAgent(
     }
   }
 
-  // ── Route 3: General job search query (original behavior, improved) ─────────
-  const [jobEmails, recentLeads] = await Promise.all([
-    prisma.emailCache.findMany({
-      where: {
-        userId,
-        OR: [
-          { from: { contains: 'linkedin' } },
-          { from: { contains: 'indeed' } },
-          { from: { contains: 'handshake' } },
-          { from: { contains: 'glassdoor' } },
-          { from: { contains: 'recruiter' } },
-          { subject: { contains: 'job' } },
-          { subject: { contains: 'opportunity' } },
-          { subject: { contains: 'interview' } },
-          { subject: { contains: 'offer' } },
-          { subject: { contains: 'hiring' } },
-        ],
-      },
-      orderBy: { receivedAt: 'desc' },
-      take: 10,
-      select: { from: true, subject: true, snippet: true, receivedAt: true },
-    }),
-    prisma.jobLead.findMany({
-      where: { userId, status: { in: ['Applied', 'Screening', 'Interview', 'Evaluated'] } },
-      orderBy: { updatedAt: 'desc' },
-      take: 5,
-      select: { title: true, company: true, status: true, matchScore: true, nextAction: true },
-    }),
-  ])
-
-  const emailSummary = jobEmails.length > 0
-    ? `\n\nRecent job-related emails:\n${jobEmails.map(e => `- ${e.from}: ${e.subject}`).join('\n')}`
-    : ''
+  // ── Route 3: General job query via gpt-4o-mini ─────────────────────────────
+  const recentLeads = await prisma.jobLead.findMany({
+    where: { userId, status: { in: ['Applied', 'Screening', 'Interview', 'Evaluated'] } },
+    orderBy: { updatedAt: 'desc' },
+    take: 5,
+    select: { title: true, company: true, status: true, matchScore: true, nextAction: true },
+  })
 
   const leadsSummary = recentLeads.length > 0
-    ? `\n\nActive job leads in tracker:\n${recentLeads.map(l => `- ${l.title} at ${l.company} (${l.status}, score: ${l.matchScore}/100) — next: ${l.nextAction ?? 'no action set'}`).join('\n')}`
+    ? `\nActive job leads:\n${recentLeads.map(l => `- ${l.title} at ${l.company} (${l.status}, score: ${l.matchScore}/100)`).join('\n')}`
     : ''
 
   const systemPrompt = `${AGENT_SHORT_PROMPT}
 
-You are Nova, Osman's Career Advisor agent. Be direct and honest. Do not encourage applying to weak fits. Focus on cybersecurity, GRC, IT support, HRIS, and SOC roles in Austin TX or remote. He is F-1 OPT authorized — flag any sponsorship requirements. He cannot take full-time roles (19.5 hrs/week max at UT System).
+You are Nova, Osman's Career Advisor. Help with job search advice, pipeline review, and next steps. Focus on: cybersecurity, GRC, IT support, SOC analyst roles in Austin TX or remote. He is F-1 OPT authorized. He starts at UT System OCIO May 18 2026 (19.5 hrs/week max).
 
-Return JSON:
-{
-  "response": "direct answer to the task",
-  "opportunities": [{"company":"name","role":"title","action":"specific action","priority":"high|medium|low"}],
-  "draftEmail": "optional draft email if the task asks for one",
-  "nextSteps": ["step 1", "step 2", "step 3"]
-}`
+Return ONLY this JSON:
+{"response":"direct answer","opportunities":[{"company":"name","role":"title","action":"next step","priority":"high|medium|low"}],"draftEmail":null,"nextSteps":["step1","step2"]}`
 
-  const prompt = `Task: ${task}${emailSummary}${leadsSummary}${emailContext ? `\n\nExtra context: ${emailContext}` : ''}`
+  const userPrompt = `Task: ${task}${leadsSummary}${emailContext ? `\n\nContext: ${emailContext}` : ''}`
 
-  const result = await openai.chatJson<JobSearchAgentResult>([
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: prompt },
-  ], 'gpt-4o-mini')
-
-  await prisma.apiUsageLog.create({
-    data: {
-      userId,
-      provider: 'openai',
-      model: 'gpt-4o-mini',
-      inputTokens: Math.floor(prompt.length / 4),
-      outputTokens: 500,
-      estimatedCost: estimateCost('gpt-4o-mini', Math.floor(prompt.length / 4), 500),
-      action: 'job_search_agent',
-    },
-  })
-
-  return result
+  try {
+    const result = await openai.chatJson<JobSearchAgentResult>([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ])
+    return result
+  } catch {
+    return {
+      response: 'Could not reach job search agent. Check your OpenAI API key.',
+      opportunities: [],
+      nextSteps: [],
+    }
+  }
 }

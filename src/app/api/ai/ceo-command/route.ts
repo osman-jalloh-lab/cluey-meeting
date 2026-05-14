@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { runEmailAccountAgent } from '@/lib/agents/emailAccountAgent'
+import { runJobSearchAgent } from '@/lib/agents/jobSearchAgent'
+import { runDailyBriefingAgent } from '@/lib/agents/dailyBriefingAgent'
+import { getAllCalendarEvents } from '@/lib/google/calendar'
 
 const Schema = z.object({
   command: z.string().min(1).max(500),
@@ -22,34 +26,22 @@ const ROUTING_RULES: Array<{ keywords: string[]; agent: string; priority: string
     source: 'calendar',
   },
   {
-    keywords: ['job', 'internship', 'apply', 'career', 'resume', 'cover letter', 'hiring', 'opportunity', 'cpt', 'opt', 'cybersecurity intern', 'find jobs'],
+    keywords: ['job', 'internship', 'apply', 'career', 'resume', 'cover letter', 'hiring', 'opportunity', 'find jobs', 'pipeline'],
     agent: 'Career Advisor',
     priority: 'high',
     source: 'job-search',
   },
   {
-    keywords: ['hr', 'i-9', 'i9', 'compliance', 'ead', 'workday', 'verify', 'immigration', 'uscis', 'opt status'],
-    agent: 'HR Compliance Specialist',
-    priority: 'high',
-    source: 'hr',
-  },
-  {
-    keywords: ['task', 'priority', 'focus', 'today', 'finish', 'unfinished', 'todo', 'action', 'blocked', 'carry', 'history', 'completed', 'what have i done'],
+    keywords: ['task', 'priority', 'focus', 'finish', 'unfinished', 'todo', 'action', 'blocked', 'hr', 'i-9', 'i9', 'compliance', 'ead', 'workday', 'verify', 'immigration', 'uscis', 'opt status'],
     agent: 'Ops Manager',
     priority: 'normal',
     source: 'tasks',
   },
   {
-    keywords: ['briefing', 'morning', 'summary', 'plan my day', 'daily', 'recap', 'overview', 'what do i have', 'assign', 'delegate', 'report', 'status update', 'check in'],
+    keywords: ['briefing', 'morning', 'summary', 'plan my day', 'daily', 'recap', 'overview', 'what do i have', 'assign', 'delegate', 'report', 'status update', 'check in', 'learn', 'study', 'course', 'certification', 'cert', 'school', 'skill', 'grow'],
     agent: 'Chief of Staff',
     priority: 'normal',
     source: 'briefing',
-  },
-  {
-    keywords: ['learn', 'study', 'course', 'certification', 'cert', 'school', 'class', 'deadline', 'assignment', 'skill', 'grow', 'improve', 'reading', 'book'],
-    agent: 'Growth Coach',
-    priority: 'normal',
-    source: 'learning',
   },
 ]
 
@@ -73,6 +65,143 @@ function buildTaskTitle(command: string, agent: string): string {
   return `${agent}: ${command}`
 }
 
+// ── Agent executors — each returns a formatted string result ──────────────────
+
+async function runEmailAgent(userId: string, command: string): Promise<string> {
+  const accounts = await prisma.connectedAccount.findMany({ where: { userId, isActive: true } })
+  if (accounts.length === 0) return 'No email accounts connected. Add one in Accounts settings.'
+  const results = await Promise.allSettled(accounts.map(a => runEmailAccountAgent(a, userId)))
+  const lines: string[] = []
+  for (const r of results) {
+    if (r.status !== 'fulfilled') continue
+    const res = r.value
+    lines.push(`${res.accountLabel} (${res.inboxType}) — ${res.unreadCount} unread of ${res.totalEmails} checked`)
+    lines.push(res.summary)
+    if (res.urgentEmails.length > 0) {
+      lines.push(`\nNeeds attention (${res.urgentEmails.length}):`)
+      res.urgentEmails.slice(0, 5).forEach(e => {
+        lines.push(`• ${e.from}`)
+        lines.push(`  "${e.subject}"`)
+        lines.push(`  Why urgent: ${e.reason}`)
+        lines.push(`  Action: ${e.suggestedAction}`)
+      })
+    }
+    if (res.emailsNeedingReply.length > 0) {
+      lines.push(`\nNeeds reply (${res.emailsNeedingReply.length}):`)
+      res.emailsNeedingReply.forEach(e => {
+        lines.push(`• "${e.subject}" from ${e.from} — tone: ${e.suggestedReplyTone}`)
+      })
+    }
+    if (res.tasks.length > 0) {
+      lines.push(`\nAction items extracted (${res.tasks.length}):`)
+      res.tasks.slice(0, 5).forEach(t => {
+        lines.push(`• [${t.priority}] ${t.title}`)
+        if (t.dueDate) lines.push(`  Due: ${t.dueDate}`)
+      })
+    }
+    lines.push('')
+  }
+  return lines.join('\n').trim()
+}
+
+async function runCalendarAgent(userId: string): Promise<string> {
+  try {
+    const now = new Date()
+    const timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const timeMax = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    const events = await getAllCalendarEvents(userId, { timeMin, timeMax, maxPerCalendar: 15 })
+    if (events.length === 0) return 'No events found in the next 7 days.'
+    const lines = events.slice(0, 10).map(e => {
+      const when = e.start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      const time = e.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      return `• ${when} ${time} — ${e.title}${e.meetingLink ? ' [has link]' : ''}\n  ${e.calendarName} · ${e.sourceAccountEmail}`
+    })
+    return `Next 7 days (${events.length} events):\n\n${lines.join('\n')}`
+  } catch {
+    return 'Calendar not connected or no events found. Check the Accounts page to reconnect.'
+  }
+}
+
+async function runTasksAgent(userId: string): Promise<string> {
+  const [open, completed] = await Promise.all([
+    prisma.task.findMany({
+      where: { userId, status: { in: ['pending', 'in_progress'] } },
+      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+      take: 15,
+    }),
+    prisma.task.findMany({
+      where: { userId, status: 'completed' },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+    }),
+  ])
+  const lines: string[] = []
+  if (open.length === 0) {
+    lines.push('No open tasks.')
+  } else {
+    lines.push(`Open tasks (${open.length}):`)
+    open.forEach((t, i) => {
+      const p = t.priority === 'high' ? '🔴' : t.priority === 'normal' ? '🟡' : '⚪'
+      lines.push(`${i + 1}. ${p} [${t.status}] ${t.title}`)
+      if (t.dueDate) lines.push(`   Due: ${new Date(t.dueDate).toLocaleDateString()}`)
+    })
+  }
+  if (completed.length > 0) {
+    lines.push(`\nRecently completed (${completed.length}):`)
+    completed.forEach(t => lines.push(`• ${t.title}`))
+  }
+  return lines.join('\n')
+}
+
+async function runBriefingAgent(userId: string): Promise<string> {
+  const accounts = await prisma.connectedAccount.findMany({ where: { userId, isActive: true } })
+  const emailResults = await Promise.allSettled(accounts.map(a => runEmailAccountAgent(a, userId)))
+  const emails = emailResults
+    .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof runEmailAccountAgent>>> => r.status === 'fulfilled')
+    .map(r => r.value)
+  const b = await runDailyBriefingAgent(userId, emails, [])
+  const lines = [
+    b.greeting,
+    '',
+    b.overview,
+    '',
+    'Top Priorities:',
+    b.topPriorities.slice(0, 5).map((p, i) => `${i + 1}. ${p}`).join('\n'),
+    '',
+    `Calendar: ${b.calendarSummary}`,
+    `Tasks: ${b.taskSummary}`,
+    '',
+    b.suggestedNextActions.length > 0 ? 'Do next:\n' + b.suggestedNextActions.slice(0, 4).map((a, i) => `${i + 1}. ${a}`).join('\n') : '',
+    '',
+    b.urgentFollowUps.length > 0 ? 'Urgent follow-ups:\n' + b.urgentFollowUps.slice(0, 3).map(u => `• [${u.priority}] ${u.suggestedAction} — ${u.reason}`).join('\n') : '',
+  ].filter(Boolean)
+  return lines.join('\n')
+}
+
+async function executeAgent(source: string, userId: string, command: string): Promise<string> {
+  try {
+    if (source === 'gmail') return await runEmailAgent(userId, command)
+    if (source === 'calendar') return await runCalendarAgent(userId)
+    if (source === 'job-search') {
+      const r = await runJobSearchAgent(userId, command)
+      const parts = [r.response]
+      if (r.nextSteps.length > 0) parts.push('\nNext steps:\n' + r.nextSteps.map((s, i) => `${i + 1}. ${s}`).join('\n'))
+      if (r.opportunities && r.opportunities.length > 0) {
+        parts.push('\nOpportunities:\n' + r.opportunities.slice(0, 5).map(o => `• ${o.role} at ${o.company} — ${o.action}`).join('\n'))
+      }
+      return parts.join('\n')
+    }
+    if (source === 'tasks') return await runTasksAgent(userId)
+    if (source === 'briefing') return await runBriefingAgent(userId)
+    // Generic fallback
+    return await runBriefingAgent(userId)
+  } catch (e) {
+    return `Agent error: ${e instanceof Error ? e.message : String(e)}`
+  }
+}
+
+// ── Route ──────────────────────────────────────────────────────────────────────
+
 export async function POST(request: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -87,7 +216,7 @@ export async function POST(request: NextRequest) {
   const routing = routeCommand(command)
   const taskTitle = buildTaskTitle(command, routing.agent)
 
-  // Create agent task
+  // Create task (status: working — we execute immediately)
   const task = await prisma.agentTask.create({
     data: {
       userId,
@@ -96,41 +225,61 @@ export async function POST(request: NextRequest) {
       assignedTo: routing.agent,
       createdBy: 'Chief of Staff',
       priority: routing.priority as 'low' | 'normal' | 'high' | 'urgent',
-      status: 'open',
+      status: 'working',
       source: routing.source,
       requiresApproval: false,
     },
   })
 
-  // Create routing message
+  // Log the handoff
   await prisma.agentMessage.create({
     data: {
       userId,
       fromAgent: 'Chief of Staff',
       toAgent: routing.agent,
       taskId: task.id,
-      message: `Got your command: "${command}". Routing to ${routing.agent}.`,
+      message: `Command: "${command}". Running now.`,
       messageType: 'handoff',
     },
   })
 
+  // Execute the agent and get actual output
+  const result = await executeAgent(routing.source, userId, command)
+
+  // Mark completed with real output
+  const completedTask = await prisma.agentTask.update({
+    where: { id: task.id },
+    data: { status: 'completed', result },
+  })
+
+  // Log the completion
+  await prisma.agentMessage.create({
+    data: {
+      userId,
+      fromAgent: routing.agent,
+      toAgent: 'Chief of Staff',
+      taskId: task.id,
+      message: `Done: "${taskTitle}". Output ready.`,
+      messageType: 'complete',
+    },
+  })
+
   return NextResponse.json({
-    task,
+    task: completedTask,
     routing,
+    result,
     message: buildAgentAck(routing.agent, command),
   })
 }
 
 function buildAgentAck(agent: string, command: string): string {
   const acks: Record<string, (cmd: string) => string> = {
-    'Inbox Specialist': (cmd) => `On it. Scanning your inbox for: "${cmd}".`,
-    'Schedule Manager': (cmd) => `Got it. Pulling up your calendar for: "${cmd}".`,
-    'Career Advisor': (cmd) => `Locked in. Running job search for: "${cmd}".`,
-    'HR Compliance Specialist': (cmd) => `Understood. Reviewing HR/compliance context for: "${cmd}".`,
-    'Ops Manager': (cmd) => `On it. Pulling up tasks and history for: "${cmd}".`,
-    'Chief of Staff': (cmd) => `On it. Coordinating and routing your command: "${cmd}".`,
-    'Growth Coach': (cmd) => `Got you. Pulling up your learning and growth path for: "${cmd}".`,
+    'Inbox Specialist': (cmd) => `Zara scanned your inbox for: "${cmd}"`,
+    'Schedule Manager': (cmd) => `Cal pulled your calendar for: "${cmd}"`,
+    'Career Advisor': (cmd) => `Nova ran job search for: "${cmd}"`,
+    'Ops Manager': (cmd) => `Rex handled: "${cmd}"`,
+    'Chief of Staff': (cmd) => `Chief responded to: "${cmd}"`,
   }
-  const fn = acks[agent] ?? ((cmd: string) => `Routing "${cmd}" to ${agent}.`)
+  const fn = acks[agent] ?? ((cmd: string) => `${agent} ran: "${cmd}"`)
   return fn(command)
 }

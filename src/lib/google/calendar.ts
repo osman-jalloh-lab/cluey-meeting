@@ -1,4 +1,4 @@
-import { google } from 'googleapis'
+import { google, calendar_v3 } from 'googleapis'
 import { getAuthenticatedClient, hasCalendarScope } from './oauth'
 import { prisma } from '@/lib/db'
 
@@ -39,7 +39,7 @@ export interface NormalizedCalendarEvent {
 }
 
 function mapEventToNormalized(
-  event: any,
+  event: calendar_v3.Schema$Event,
   calendarId: string,
   calendarName: string,
   sourceAccountId: string,
@@ -57,9 +57,9 @@ function mapEventToNormalized(
       : new Date(event.end?.date ?? ''),
     location: event.location ?? undefined,
     meetingLink: event.conferenceData?.entryPoints?.find(
-      (e: any) => e.entryPointType === 'video'
+      (e) => e.entryPointType === 'video'
     )?.uri ?? undefined,
-    attendees: event.attendees?.map((a: any) => a.email ?? '').filter(Boolean) ?? [],
+    attendees: event.attendees?.map((a) => a.email ?? '').filter(Boolean) ?? [],
     calendarId,
     calendarName,
     sourceAccountId,

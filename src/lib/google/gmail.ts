@@ -1,4 +1,4 @@
-import { google } from 'googleapis'
+import { google, gmail_v1 } from 'googleapis'
 import { getAuthenticatedClient } from './oauth'
 
 export async function getGmailClient(connectedAccountId: string) {
@@ -29,7 +29,7 @@ function decodeBody(data?: string): string {
   return Buffer.from(data, 'base64url').toString('utf-8')
 }
 
-function extractTextBody(payload: any): string {
+function extractTextBody(payload: gmail_v1.Schema$MessagePart | null | undefined): string {
   if (!payload) return ''
 
   if (payload.mimeType === 'text/plain' && payload.body?.data) {

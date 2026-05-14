@@ -100,14 +100,15 @@ export default function CEOCommand({ onTaskCreated }: CEOCommandProps) {
             cursor: command.trim() && !loading ? 'pointer' : 'not-allowed',
           }}
         >
-          {loading ? '⟳' : 'Run'}
+          {loading ? <span className="run-spinner">⟳</span> : 'Run'}
         </button>
       </div>
 
       {/* Ack */}
       {lastAck && (
         <div
-          className="mb-3 px-3 py-2 rounded-lg text-xs"
+          key={lastAck.message}
+          className="ack-message mb-3 px-3 py-2 rounded-lg text-xs"
           style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}
         >
           <span className="font-medium">{lastAck.agent}:</span> {lastAck.message}
@@ -121,15 +122,7 @@ export default function CEOCommand({ onTaskCreated }: CEOCommandProps) {
             key={qc}
             onClick={() => submit(qc)}
             disabled={loading}
-            className="text-xs px-2.5 py-1 rounded-lg transition-all"
-            style={{
-              background: 'rgba(99,102,241,0.12)',
-              color: '#a5b4fc',
-              border: '1px solid rgba(99,102,241,0.2)',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.25)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.12)' }}
+            className="quick-cmd-btn text-xs px-2.5 py-1 rounded-lg"
           >
             {qc}
           </button>
